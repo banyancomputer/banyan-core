@@ -3,20 +3,20 @@ import { unwrapResult } from '@reduxjs/toolkit';
 
 import { SubscriptionPlanModal } from '@/app/components/common/Modal/SubscriptionPlanModal';
 
-import { useAppDispatch, useAppSelector } from '@/app/store';
-import { getSubscriptions, manageSubscriptions } from '@/app/store/billing/actions';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { getSubscriptions, manageSubscriptions } from '@store/billing/actions';
 import { openModal } from '@store/modals/slice';
 import { convertFileSize, convertSubscriptionsSizes } from '@/app/utils/storage';
 import { getHotStorageAmount } from '@/app/utils/subscritions';
 import { getDateLabel } from '@/app/utils/date';
-import { useTomb } from '@contexts/tomb';
 
 export const NextBillingDate = () => {
     const dispatch = useAppDispatch();
     const { selectedSubscription } = useAppSelector(state => state.billing);
+    const { storageLimits, storageUsage } = useAppSelector(state => state.tomb);
     const { subscriptionValidUntil, monthlyEggress } = useAppSelector(state => state.session.user);
     const messages = useAppSelector(state => state.locales.messages.coponents.account.billing.invoices.nextBillingDate);
-    const { storageUsage, storageLimits } = useTomb();
+
 
     const upgragePlan = () => {
         dispatch(openModal({ content: <SubscriptionPlanModal /> }));

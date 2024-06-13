@@ -4,7 +4,7 @@ import { RequestBucketAccessModal } from '@components/common/Modal/RequestBucket
 
 import { Bucket } from '@app/types/bucket';
 import { openModal } from '@store/modals/slice';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 
 import { Lock } from '@static/images/buckets';
 

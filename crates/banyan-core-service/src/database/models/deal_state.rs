@@ -41,7 +41,7 @@ impl TryFrom<&str> for DealState {
             "sealed" => DealState::Sealed,
             "finalized" => DealState::Finalized,
             "cancelled" => DealState::Cancelled,
-            _ => return Err(DealStateError::InvalidStateValue),
+            _ => return Err(DealStateError::InvalidStateValue(val.to_string())),
         };
 
         Ok(variant)
@@ -90,8 +90,8 @@ impl Type<Sqlite> for DealState {
 
 #[derive(Debug, thiserror::Error)]
 pub enum DealStateError {
-    #[error("attempted to decode unknown state value")]
-    InvalidStateValue,
+    #[error("attempted to decode unknown state value: {0}")]
+    InvalidStateValue(String),
 }
 
 #[cfg(test)]

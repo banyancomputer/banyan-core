@@ -50,7 +50,7 @@ impl TaskLike for RedistributeDataTask {
     type Context = RedistributeDataTaskContext;
 
     async fn run(&self, _task: CurrentTask, ctx: Self::Context) -> Result<(), Self::Error> {
-        let database = ctx.database();
+        let mut conn = ctx.database().acquire().await?;
         let client = CoreServiceClient::new(
             ctx.secrets().service_signing_key(),
             ctx.service_name(),
@@ -59,10 +59,10 @@ impl TaskLike for RedistributeDataTask {
         )?;
         let provider_credentials = client.request_provider_token(&self.new_host_id).await?;
         let storage_client =
-            StorageProviderClient::new(&self.new_host_url, &provider_credentials.token);
-        let upload = Uploads::get_by_metadata_id(&database, &self.metadata_id).await?;
+            StorageProviderClient::new(&self.new_host_url, &provider_credentials.token)?;
+        let upload = Uploads::get_by_metadata_id(&mut conn, &self.metadata_id).await?;
 
-        let client = Clients::find_by_upload_id(&database, &upload.id).await?;
+        let client = Clients::find_by_upload_id(&mut conn, &upload.id).await?;
         let new_client = storage_client
             .push_client(ClientsRequest {
                 platform_id: client.platform_id,
@@ -79,8 +79,6 @@ impl TaskLike for RedistributeDataTask {
                 grant_size: self.storage_grant_size,
             })
             .await?;
-
-        let mut conn = database.acquire().await?;
 
         RedistributeBlocksTask {
             metadata_id: self.metadata_id.clone(),

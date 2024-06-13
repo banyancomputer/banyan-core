@@ -1,13 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { closeModal } from '@store/modals/slice';
-import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { createBucketAndMount } from '@store/tomb/actions';
 
 export const CreateDriveModal: React.FC<{ onSuccess?: (id: string) => void }> = ({ onSuccess }) => {
     const navigate = useNavigate();
@@ -15,12 +16,9 @@ export const CreateDriveModal: React.FC<{ onSuccess?: (id: string) => void }> = 
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.createBucket);
     const { driveAlreadyExists } = useAppSelector(state => state.locales.messages.contexts.tomb);
     const [bucketName, setBucketName] = useState('');
-    const { createDriveAndMount } = useTomb();
     const [bucketType, setBucketType] = useState('interactive');
     const [storageClass, setStorageClass] = useState('hot');
-    const isBucketDataFilled = useMemo(() =>
-        !!bucketType && !!(bucketName.length >= 3),
-        [bucketName, bucketName]);
+    const isBucketDataFilled = !!bucketType && bucketName.length >= 3;
 
     const changeBucketName = (event: React.ChangeEvent<HTMLInputElement>) => {
         const regexp = new RegExp(/^.{0,32}$/);
@@ -35,13 +33,18 @@ export const CreateDriveModal: React.FC<{ onSuccess?: (id: string) => void }> = 
 
     const create = async () => {
         try {
-            const bucketId = await createDriveAndMount(bucketName, storageClass, bucketType);
+            const bucket = unwrapResult(await dispatch(createBucketAndMount({ name: bucketName, storageClass, bucketType })));
             if (onSuccess) {
-                onSuccess(bucketId);
+                onSuccess(bucket.id);
             } else {
                 cancel();
-                navigate(`/drive/${bucketId}`);
-            }
+                ToastNotifications.notify(
+                    messages.driveCreated,
+                    null,
+                    messages.viewDrive,
+                    () => navigate(`/drive/${bucket.id}`)
+                );
+            };
         } catch (error: any) {
             if (error.message !== driveAlreadyExists) {
                 ToastNotifications.error(`${messages.creationError}`, `${messages.tryAgain}`, create);

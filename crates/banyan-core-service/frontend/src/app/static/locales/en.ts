@@ -108,7 +108,7 @@ export default {
                     }
                 },
                 emptyState: {
-                    description: "Drag & drop files here to upload,or use the 'Upload' button",
+                    description: "Drag & drop files here to upload, or use the 'Upload' button",
                     buttonText: "Upload",
                     tryAgain: "Try again",
                     uploadError: "There was an issue with upload. Please try again",
@@ -239,6 +239,8 @@ export default {
                     cancel: "Cancel",
                     create: "Create",
                     creationError: "There was an issue creating your drive. Please try again.",
+                    driveCreated: "Drive Created",
+                    viewDrive: "View Drive",
                     tryAgain: "Try again",
                 },
                 createFolder: {
@@ -248,6 +250,8 @@ export default {
                     cancel: "Cancel",
                     create: "Create",
                     creationError: "There was an issue creating your folder. Please try again.",
+                    folderCreated: "Folder Created",
+                    viewFolder: "View Folder",
                     tryAgain: "Try again",
                 },
                 deleteBucket: {
@@ -285,6 +289,9 @@ export default {
                     cancel: "Cancel",
                     moveTo: "Move to",
                     fileWasMoved: "File was moved",
+                    folderWasMoved: "Folder was moved",
+                    viewFile: "View File",
+                    viewFolder: "View Folder",
                     moveToError: "There was an issue moving your file. Please try again",
                     tryAgain: "Try again",
                 },
@@ -385,12 +392,13 @@ export default {
                 },
                 uploadFile: {
                     title: "Upload files",
-                    subtitle: "Choose files for uploading from your device, or use drag & drop",
                     selectDrive: "Select drive",
                     createNewDrive: "Create new drive",
                     selectFolder: "Select folder",
-                    clickToUpload: "Click to upload",
-                    orDragAndDrop: "or drag and drop",
+                    clickToUpload: "Drag & drop files here to upload,or click here to uplaod",
+                    maxFileSize: "Max file size: 100 MB",
+                    maxFileSizeError: "The file must be less than 100 MB. For larger files",
+                    useCLI: "use CLI",
                     cancel: "Cancel",
                     upload: "Upload",
                     uploadError: "There was an issue with upload. Please try again",

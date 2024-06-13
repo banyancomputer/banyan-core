@@ -1,21 +1,23 @@
 import { useEffect } from 'react';
+import { unwrapResult } from '@reduxjs/toolkit';
 
-import { useTomb } from '@contexts/tomb';
-import { useAppSelector } from '@app/store';
-import { ToastNotifications } from '@app/utils/toastNotifications';
-import { getDateLabel, getTime } from '@app/utils/date';
-import { convertFileSize } from '@app/utils/storage';
+import { useAppDispatch, useAppSelector } from '@app/store';
+import { ToastNotifications } from '@utils/toastNotifications';
+import { getDateLabel, getTime } from '@utils/date';
+import { convertFileSize } from '@utils/storage';
 
 import { Bucket } from '@/app/types/bucket';
+import { getSelectedBucketSnapshots, restore } from '@store/tomb/actions';
 
 export const SnapshotsTable = () => {
-    const { getBucketSnapshots, restore, tomb, selectedBucket } = useTomb();
+    const dispatch = useAppDispatch();
+    const { tomb, selectedBucket } = useAppSelector(state => state.tomb);
     const { date, size, state } = useAppSelector(state => state.locales.messages.coponents.bucket.snapshots.table);
     const snapshotsActionsMessages = useAppSelector(state => state.locales.messages.coponents.bucket.snapshots.table.snapshotActions);
 
     const restoreFromSnapshot = async (bucket: Bucket, snapshotId: string) => {
         try {
-            await restore(bucket, snapshotId);
+            unwrapResult(await dispatch(restore({ bucket, snapshotId })));
             ToastNotifications.notify('Restoring could take up to 72 hours');
         } catch (error: any) {
             ToastNotifications.error('Error while restoring from snapshot');
@@ -27,7 +29,7 @@ export const SnapshotsTable = () => {
 
         (async () => {
             try {
-                await getBucketSnapshots(selectedBucket?.id || '');
+                unwrapResult(await dispatch(getSelectedBucketSnapshots(selectedBucket?.id || '')));
             } catch (error: any) {
                 ToastNotifications.error('Error while getting snapshots');
             }

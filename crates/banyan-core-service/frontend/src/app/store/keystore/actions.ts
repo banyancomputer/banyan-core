@@ -3,9 +3,9 @@ import { createAsyncThunk, unwrapResult } from "@reduxjs/toolkit";
 import { UserClient } from "@/api/user";
 import { AuthClient } from "@/api/auth";
 import { RootState } from "..";
-import { PrivateKeyMaterial } from "@app/utils/crypto/types";
+import { PrivateKeyMaterial } from "@utils/crypto/types";
 import { setEscrowedKeyMaterial } from "@store/keystore/slice";
-import { destroyLocalKey, getLocalKey } from "@app/utils";
+import { destroyLocalKey, getLocalKey } from "@utils";
 
 const userClient = new UserClient();
 const authClient = new AuthClient();

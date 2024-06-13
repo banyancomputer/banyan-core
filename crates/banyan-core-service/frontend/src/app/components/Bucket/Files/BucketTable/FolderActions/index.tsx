@@ -8,7 +8,7 @@ import { Action } from '@components/Bucket/Files/BucketTable/FileActions';
 
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { openModal } from '@store/modals/slice';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 
 import { MoveTo, Rename, Trash, Upload } from '@static/images/common';
 
@@ -25,7 +25,8 @@ export const FolderActions: React.FC<{ bucket: Bucket; folder: BrowserObject; pa
                         bucket={bucket}
                         folder={folder}
                         path={[...path, folder.name]}
-                    />
+                    />,
+                    path: [bucket.name, ...path, folder.name]
                 }
             )
         );
@@ -66,7 +67,8 @@ export const FolderActions: React.FC<{ bucket: Bucket; folder: BrowserObject; pa
                     file={folder}
                     parrentFolder={parrentFolder}
                     path={path}
-                />
+                />,
+                path: [bucket.name, ...path]
             }
         ));
     };
@@ -96,7 +98,7 @@ export const FolderActions: React.FC<{ bucket: Bucket; folder: BrowserObject; pa
     };
 
     return (
-        <div className="w-48 right-8 text-xs font-medium bg-bucket-actionsBackground rounded-md shadow-md z-10 select-none text-bucket-actionsText overflow-hidden">{
+        <div className="absolute w-48 right-5 text-xs font-medium bg-bucket-actionsBackground rounded-md shadow-md z-10 select-none text-bucket-actionsText overflow-hidden">{
             actions[bucketType].map(action =>
                 <div
                     key={action.label}

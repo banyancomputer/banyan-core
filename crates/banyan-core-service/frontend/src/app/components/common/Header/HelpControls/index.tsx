@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { useAppSelector } from '@/app/store';
+import { useAppSelector } from '@store/index';
 
 import { Mail, Question } from '@static/images/common'
 

@@ -1,18 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { closeModal } from '@store/modals/slice';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
-import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { getSelectedBucketFiles, moveTo } from '@store/tomb/actions';
+import { selectBucket } from '@store/tomb/slice';
 
 export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; path: string[] }> = ({ bucket, file, path }) => {
     const inputRef = useRef<HTMLInputElement | null>(null);
-    const { moveTo, getSelectedBucketFiles, selectBucket } = useTomb();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.renameFile);
     const [newName, setNewName] = useState(file.name);
     const folderLocation = useFolderLocation();
@@ -24,18 +25,19 @@ export const RenameFileModal: React.FC<{ bucket: Bucket; file: BrowserObject; pa
 
     const save = async () => {
         try {
-            await moveTo(bucket, [...path, file.name], [...path], newName);
+            unwrapResult(await dispatch(moveTo({ bucket, from: [...path, file.name], to: [...path], name: newName })));
             ToastNotifications.notify(`${messages.fileWasRenamed}`);
             if (path.join('/') === folderLocation.join('/')) {
-                await getSelectedBucketFiles(folderLocation);
+                unwrapResult(await dispatch(getSelectedBucketFiles(folderLocation)));
                 close();
 
                 return;
             };
             file.name = newName;
-            selectBucket({ ...bucket });
+            dispatch(selectBucket({ ...bucket }));
             close();
         } catch (error: any) {
+            console.error(error)
             ToastNotifications.error(`${messages.editError}`, `${messages.tryAgain}`, save);
         };
     };

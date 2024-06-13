@@ -8,9 +8,9 @@ import { DraggingPreview } from './DraggingPreview';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { getDateLabel } from '@/app/utils/date';
 import { convertFileSize } from '@/app/utils/storage';
-import { useFilePreview } from '@/app/contexts/filesPreview';
 import { handleDrag, handleDragEnd, handleDragStart } from '@utils/dragHandlers';
-import { useTomb } from '@contexts/tomb';
+import { openFile } from '@store/filePreview/slice';
+import { useAppDispatch } from '@store/index';
 
 export const FileRow: React.FC<{
     file: BrowserObject;
@@ -20,9 +20,8 @@ export const FileRow: React.FC<{
     nestingLevel?: number;
     parrentFolder?: BrowserObject;
 }> = ({ file, bucket, nestingLevel = 0, path = [], parrentFolder, siblingFiles }) => {
-    const { openFile } = useFilePreview();
     const [isDragging, setIsDragging] = useState(false);
-    const { getExpandedFolderFiles, getSelectedBucketFiles } = useTomb();
+    const dispatch = useAppDispatch();
 
     const previewFile = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BrowserObject) => {
         //@ts-ignore
@@ -30,7 +29,7 @@ export const FileRow: React.FC<{
             return;
         };
 
-        openFile(bucket, file, siblingFiles, path, parrentFolder);
+        dispatch(openFile({ bucket, file, files: siblingFiles, path, parrentFolder }));
     };
 
     return (
@@ -39,7 +38,7 @@ export const FileRow: React.FC<{
             onClick={event => previewFile(event, bucket, file)}
             onDrag={event => handleDrag(event, file.name)}
             onDragStart={event => handleDragStart(event, file.name, setIsDragging, path)}
-            onDragEnd={() => handleDragEnd(setIsDragging, getExpandedFolderFiles, getSelectedBucketFiles, path, parrentFolder, bucket)}
+            onDragEnd={() => handleDragEnd(setIsDragging)}
             draggable
         >
             <td
@@ -53,7 +52,7 @@ export const FileRow: React.FC<{
             </td>
             <td className="px-6 py-2">{getDateLabel(+file.metadata.modified)}</td>
             <td className="px-6 py-2">{convertFileSize(file.metadata.size)}</td>
-            <td className="px-6 py-2">
+            <td className="px-6 py-0">
                 <ActionsCell
                     actions={
                         <FileActions

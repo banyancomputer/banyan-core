@@ -1,20 +1,17 @@
-import React, { useEffect } from 'react';
-
 import { UploadFileModal } from '@components/common/Modal/UploadFileModal';
 import { Fallback } from '@components/common/Fallback';
 import { Bucket } from '@components/Home/Bucket';
 import { CreateDriveModal } from '@components/common/Modal/CreateDriveModal';
 import { EmptyState } from '@components/Home/EmptyState';
 
-import { useTomb } from '@/app/contexts/tomb';
-import { useAppDispatch, useAppSelector } from '../store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 import { openModal } from '@store/modals/slice';
 
 import { PlusBold, Upload } from '@static/images/common';
 
 const Home = () => {
     const dispatch = useAppDispatch();
-    const { buckets, areBucketsLoading } = useTomb();
+    const { buckets, isLoading } = useAppSelector(state => state.tomb);
     const messages = useAppSelector(state => state.locales.messages.pages.home);
 
     const uploadFile = () => {
@@ -22,8 +19,8 @@ const Home = () => {
     };
 
     const createDrive = () => {
-        dispatch(openModal({ content: <CreateDriveModal />}));
-};
+        dispatch(openModal({ content: <CreateDriveModal /> }));
+    };
 
     return (
         <section className="h-[455px] py-9 pt-14 px-4" id="buckets">
@@ -31,7 +28,7 @@ const Home = () => {
                 <h2 className="text-lg font-semibold">
                     {`${messages.allDrives}`}
                 </h2>
-                {!areBucketsLoading ?
+                {!isLoading ?
                     <div className="flex items-stretch gap-2">
                         <button
                             className="btn-primary gap-2 w-[138px] py-2 px-4 text-sm"
@@ -52,7 +49,7 @@ const Home = () => {
                     null
                 }
             </div>
-            <Fallback shouldRender={!areBucketsLoading}>
+            <Fallback shouldRender={!isLoading}>
                 {buckets.length ?
                     <div className="grid grid-cols-3 gap-3 pb-4 xl:grid-cols-4 ">
                         {

@@ -26,6 +26,6 @@ where
             "/:bucket_key_id",
             get(single_bucket_key::handler).delete(delete_bucket_key::handler),
         )
-        .route("/:bucket_key_id/reject", post(delete_bucket_key::handler))
+        .route("/:bucket_key_id/cancel", post(delete_bucket_key::handler))
         .with_state(state)
 }

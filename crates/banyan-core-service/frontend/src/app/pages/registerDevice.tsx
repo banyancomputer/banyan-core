@@ -2,26 +2,28 @@ import { useParams } from 'react-router-dom';
 
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
-import { useTomb } from '@/app/contexts/tomb';
-import { publicPemWrap } from '@app/utils';
-import { useAppSelector } from '../store';
+import { publicPemWrap } from '@utils/index';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { approveDeviceApiKey } from '@store/tomb/actions';
+import { unwrapResult } from '@reduxjs/toolkit';
+import { ToastNotifications } from '../utils/toastNotifications';
 
 // TODO: design must be handed down and implemented
 const RegisterDevice = () => {
+	const dispatch = useAppDispatch();
 	const params = useParams();
 	const spki = params.spki || '';
 	const messages = useAppSelector(state => state.locales.messages.pages.registerDevice);
-	const { approveDeviceApiKey } = useTomb();
 
 	// Perform all functions required to complete
 	const completeRegistration = async () => {
 		const pem = publicPemWrap(spki);
-		console.log("pem: " + pem);
-		await approveDeviceApiKey(pem)
-			.catch((error: any) => {
-				console.log(`error: ${error}`);
-				alert('failed to authorize new device!');
-			});
+		try {
+			unwrapResult(await dispatch(approveDeviceApiKey(pem)))
+		} catch (error: any) {
+			console.log(`error: ${error}`);
+			ToastNotifications.error('failed to authorize new device!');
+		};
 	};
 
 	return (

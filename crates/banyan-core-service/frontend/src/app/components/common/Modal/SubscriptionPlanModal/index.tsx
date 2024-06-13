@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { unwrapResult } from '@reduxjs/toolkit';
 
-import { useAppDispatch, useAppSelector } from '@/app/store'
-import { getSubscriptions, subscribe } from '@/app/store/billing/actions';
+import { useAppDispatch, useAppSelector } from '@store/index'
+import { getSubscriptions, subscribe } from '@store/billing/actions';
 import { convertSubscriptionsSizes } from '@/app/utils/storage';
 import { getHotStorageAmount } from '@/app/utils/subscritions';
 
@@ -23,11 +23,11 @@ export const SubscriptionPlanModal = () => {
     }, []);
 
     return (
-        <div className="w-[1050px] flex flex-col">
+        <div className={`flex flex-col`}>
             <h4 className="text-lg font-semibold text-center ">{`${messages.title}`}</h4>
             <p className="mb-8 text-sm text-text-600 text-center">{`${messages.subtitle}.`}</p>
             <div className="mt-4 w-full flex flex-nowrap">
-                <div className="flex flex-col flex-grow transition-all hover:bg-hover">
+                <div className="flex flex-col flex-grow min-w-[240px] transition-all hover:bg-hover">
                     <div className="h-[300px] px-4 py-2 border-1 border-border-regular"></div>
                     <div className="px-4 py-2 border-1 border-border-regular">{`${messages.hotStorage}`}</div>
                     <div className="px-4 py-2 border-1 border-border-regular">{`${messages.hotReplications}`}</div>
@@ -35,7 +35,7 @@ export const SubscriptionPlanModal = () => {
                     <div className="px-4 py-2 border-1 border-border-regular">{`${messages.archivalSnapshots}`}</div>
                 </div>
                 {subscriptions.map(subscription =>
-                    <div className="flex flex-col flex-grow transition-all hover:bg-hover">
+                    <div className="flex flex-col flex-grow w-[240px] transition-all hover:bg-hover">
                         <div className="h-[300px] flex flex-col items-start px-4 py-2 border-1 border-border-regular">
                             <h5 className="font-semibold">{subscription.title}</h5>
                             {subscription.service_key === 'starter' ?

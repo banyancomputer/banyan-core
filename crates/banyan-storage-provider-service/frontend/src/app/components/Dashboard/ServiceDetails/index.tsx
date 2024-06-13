@@ -30,7 +30,7 @@ export const ServiceDetails = () => {
                         <tr>
                             <td className="p-3 text-12">Storage Provider Identity</td>
                             <td className="p-3 text-12">Currently used storage</td>
-                            <td className="p-3 text-12">Availiable/ allocated storage</td>
+                            <td className="p-3 text-12">Available/ allocated storage</td>
                             <td className="p-3 text-12">Billing period</td>
                         </tr>
                     </thead>

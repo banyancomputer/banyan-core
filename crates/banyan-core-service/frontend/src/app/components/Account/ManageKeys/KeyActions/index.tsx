@@ -6,8 +6,8 @@ import { Bucket, BucketKey } from '@app/types/bucket';
 import { openModal } from '@store/modals/slice';
 import { useAppDispatch, useAppSelector } from '@app/store';
 import { AccessKeysClient } from '@/api/accessKeys';
-import { useTomb } from '@contexts/tomb';
-import { ToastNotifications } from '@/app/utils/toastNotifications';
+import { ToastNotifications } from '@utils/toastNotifications';
+import { getBucketsKeys } from '@store/tomb/actions';
 
 import { Rename, Trash } from '@static/images/common';
 
@@ -15,7 +15,6 @@ const client = new AccessKeysClient();
 
 export const KeyActions: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({ bucket, bucketKey }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.account.manageKeys.keyActions);
-    const { getBucketsKeys } = useTomb();
     const dispatch = useAppDispatch();
 
     const rename = async () => {
@@ -29,13 +28,13 @@ export const KeyActions: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({
         };
         try {
             await client.deleteAccessKey(bucket.id, bucketKey.id);
-            await getBucketsKeys();
+            await dispatch(getBucketsKeys());
         } catch (error: any) {
         };
     };
 
     return (
-        <div className="w-52 text-xs font-medium bg-bucket-actionsBackground rounded-md shadow-md z-10 text-bucket-actionsText overflow-hidden">
+        <div className="absolute right-5 w-52 text-xs font-medium bg-bucket-actionsBackground rounded-md shadow-md z-10 text-bucket-actionsText overflow-hidden">
             <div
                 className="flex items-center gap-2 py-3 px-4 transition-all hover:bg-hover"
                 onClick={rename}

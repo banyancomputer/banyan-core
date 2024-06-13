@@ -239,6 +239,8 @@ export default {
                     cancel: "Abbrechen",
                     create: "Erstellen",
                     creationError: "Beim Erstellen Ihres Laufwerks ist ein Problem aufgetreten. Bitte versuchen Sie es erneut.",
+                    driveCreated: "Laufwerk erstellt",
+                    viewDrive: "Laufwerk anzeigen",
                     tryAgain: "Erneut versuchen",
                 },
                 createFolder: {
@@ -248,6 +250,8 @@ export default {
                     cancel: "Abbrechen",
                     create: "Erstellen",
                     creationError: "Beim Erstellen Ihres Ordners ist ein Problem aufgetreten. Bitte versuchen Sie es erneut.",
+                    folderCreated: "Ordner erstellt",
+                    viewFolder: "Ordner anzeigen",
                     tryAgain: "Erneut versuchen",
                 },
                 deleteBucket: {
@@ -285,6 +289,9 @@ export default {
                     cancel: "Abbrechen",
                     moveTo: "Verschieben nach",
                     fileWasMoved: "Datei wurde verschoben",
+                    folderWasMoved: "Ordner wurde verschoben",
+                    viewFile: "Datei anzeigen",
+                    viewFolder: "Ordner anzeigen",
                     moveToError: "Beim Verschieben Ihrer Datei ist ein Problem aufgetreten. Bitte versuchen Sie es erneut",
                     tryAgain: "Erneut versuchen",
                 },
@@ -385,16 +392,17 @@ export default {
                 },
                 uploadFile: {
                     title: "Dateien hochladen",
-                    subtitle: "Wählen Sie Dateien zum Hochladen von Ihrem Gerät aus oder verwenden Sie Drag & Drop",
                     selectDrive: "Laufwerk auswählen",
                     createNewDrive: "Neues Laufwerk erstellen",
                     selectFolder: "Ordner auswählen",
-                    clickToUpload: "Klicken Sie zum Hochladen",
-                    orDragAndDrop: "oder ziehen Sie Dateien hierher",
+                    clickToUpload: "Dateien hierher ziehen & ablegen, um sie hochzuladen, oder hier klicken, um hochzuladen",
+                    maxFileSize: "Maximale Dateigröße: 100 MB",
+                    maxFileSizeError: "Die Datei muss kleiner als 100 MB sein. Für größere Dateien",
+                    useCLI: "verwenden Sie die Befehlszeilenschnittstelle",
                     cancel: "Abbrechen",
                     upload: "Hochladen",
                     uploadError: "Beim Hochladen ist ein Problem aufgetreten. Bitte versuchen Sie es erneut",
-                    tryAgain: "Erneut versuchen",
+                    tryAgain: "Erneut versuchen"
                 }
             }
         },

@@ -5,6 +5,7 @@ use http::StatusCode;
 use uuid::Uuid;
 
 use crate::app::AppState;
+use crate::database::models::DealState;
 use crate::extractors::StorageProviderIdentity;
 
 pub async fn handler(
@@ -18,12 +19,14 @@ pub async fn handler(
     let query_result = sqlx::query!(
         r#"
             UPDATE deals
-            SET state = 'cancelled'
-            WHERE id = $1 
-            AND state == 'accepted' 
-            AND accepted_by=$2;
+            SET state = $1, accepted_by = NULL, accepted_at = NULL
+            WHERE id = $2
+            AND state = $3
+            AND accepted_by = $4;
         "#,
+        DealState::Active,
         deal_id,
+        DealState::Accepted,
         storage_provider.id,
     )
     .execute(&database)

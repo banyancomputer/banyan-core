@@ -143,7 +143,7 @@ RUN --mount=type=cache,id=${CORE_SVC_NODE_CACHE_ID},target=/usr/src/app/crates/b
     --mount=type=cache,id=${STORAGE_SVC_NODE_CACHE_ID},target=/usr/src/app/crates/banyan-storage-provider-service/frontend/node_modules \
     if [ -d "crates/$SERVICE/frontend" ]; then \
         echo 'INFO: Fetching front-end dependencies' >&2 ; \
-        ( cd "crates/$SERVICE/frontend" && npm install ); \
+        ( cd "crates/$SERVICE/frontend" && npm install --include dev ); \
     else \
         echo 'INFO: No front-end to fetch dependencies for' >&2 ; \
     fi
@@ -155,7 +155,7 @@ ARG CORE_SVC_NODE_ADMIN_CACHE_ID
 RUN --mount=type=cache,id=${CORE_SVC_NODE_ADMIN_CACHE_ID},target=/usr/src/app/crates/banyan-core-service/admin_frontend/node_modules \
     if [ -d "crates/$SERVICE/admin_frontend" ]; then \
         echo 'INFO: Fetching admin front-end dependencies' >&2 ; \
-        ( cd "crates/$SERVICE/admin_frontend" && npm install ) ; \
+        ( cd "crates/$SERVICE/admin_frontend" && npm install --include dev ) ; \
     else \
         echo 'INFO: No admin front-end to fetch dependencies for' >&2 ; \
     fi

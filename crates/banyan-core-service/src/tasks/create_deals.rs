@@ -7,10 +7,8 @@ use crate::app::AppState;
 use crate::database::models::{DealState, MetadataState, SnapshotSegment};
 
 const MAX_SNAPSHOT_SEGMENT_SIZE: i64 = 32 * 1024 * 1024 * 1024; // 32GiB
-                                                                //
 pub const BLOCK_SIZE: i64 = 262144; // 256 KiB
-                                    //
-const EMPTY_DEAL: &str = ""; // 256 KiB
+const EMPTY_DEAL: &str = "";
 
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
@@ -215,8 +213,7 @@ impl CreateDealsTask {
                 deals_builder.push(", ");
             }
         }
-        deals_builder.push(")");
-        deals_builder.push(");");
+        deals_builder.push("));");
         deals_builder.build().execute(&mut **transaction).await?;
         Ok(())
     }

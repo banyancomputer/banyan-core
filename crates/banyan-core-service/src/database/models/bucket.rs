@@ -434,8 +434,8 @@ impl Bucket {
         bucket_id: &str,
         configuration: &ApiBucketConfiguration,
     ) -> Result<SqliteQueryResult, sqlx::Error> {
-        let mut query =
-            sqlx::QueryBuilder::new("UPDATE buckets SET updated_at = CURRENT_TIMESTAMP");
+        let mut query = sqlx::QueryBuilder::new("UPDATE buckets SET updated_at = ");
+        query.push_bind(OffsetDateTime::now_utc());
 
         if let Some(name) = &configuration.name {
             query.push(" ,name = ");

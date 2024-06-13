@@ -34,8 +34,27 @@ branches:
       required_status_checks:
         strict: true
         contexts:
-          - "rust"
-          - "node"
+          # NOTE to best understand this, configure the steps in the web UI, then hit the API REST endpoint to see how
+          #      these are realized by GitHub, URL to curl is https://api.github.com/repos/banyancomputer/banyan-core/branches/main
+          #      in short, it strips the `ci` prefix for some reason but everything else is the same as the names that
+          #      show up in the GitHub Actions web UI when it runs
+          # rust steps
+          - "rust / audit"
+          - "rust / build"
+          - "rust / format"
+          - "rust / test"
+          # node banyan-core-service/admin_frontend steps
+          - "node (banyan-core-service, admin_frontend) / audit"
+          - "node (banyan-core-service, admin_frontend) / build"
+          - "node (banyan-core-service, admin_frontend) / test"
+          # node banyan-core-service/frontend steps
+          - "node (banyan-core-service, frontend) / audit"
+          - "node (banyan-core-service, frontend) / build"
+          - "node (banyan-core-service, frontend) / test"
+          # node banyan-storage-provider-service/frontend steps
+          - "node (banyan-storage-provider-service, frontend) / audit"
+          - "node (banyan-storage-provider-service, frontend) / build"
+          - "node (banyan-storage-provider-service, frontend) / test"
 
       # Required to to be present due too a limitation in GitHub's GraphQL API
       restrictions: null

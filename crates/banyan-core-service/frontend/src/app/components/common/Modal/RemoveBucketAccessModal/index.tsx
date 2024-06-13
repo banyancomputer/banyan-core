@@ -1,16 +1,16 @@
 import React from 'react';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { closeModal } from '@store/modals/slice';
-import { useTomb } from '@/app/contexts/tomb';
 import { Bucket, BucketKey } from '@/app/types/bucket';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { removeBucketAccess } from '@store/tomb/actions';
 
 export const RemoveBucketAccessModal: React.FC<{ bucket: Bucket; bucketKey: BucketKey }> = ({ bucket, bucketKey }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.removeBucketAccess);
-    const { removeBucketAccess } = useTomb();
     const dispatch = useAppDispatch();
 
     const close = () => {
@@ -19,7 +19,7 @@ export const RemoveBucketAccessModal: React.FC<{ bucket: Bucket; bucketKey: Buck
 
     const removeAccess = async () => {
         try {
-            await removeBucketAccess(bucket, bucketKey.id);
+            unwrapResult(await dispatch(removeBucketAccess({ bucket, bucketKeyId: bucketKey.id })));
             close();
         } catch (error: any) { }
     };

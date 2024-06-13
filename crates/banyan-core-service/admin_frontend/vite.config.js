@@ -54,6 +54,7 @@ export default ({ mode }) => {
 				"@": path.resolve(__dirname, "./src/"),
 				"@app": path.resolve(__dirname, "./src/app/"),
 				"@components": path.resolve(__dirname, "./src/app/components/"),
+				"@utils": path.resolve(__dirname, "./src/app/utils/"),
 				"@static": path.resolve(__dirname, "./src/app/static/"),
 			},
 		},

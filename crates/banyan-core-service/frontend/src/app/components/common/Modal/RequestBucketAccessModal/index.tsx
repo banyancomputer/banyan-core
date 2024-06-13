@@ -5,7 +5,7 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { closeModal } from '@store/modals/slice';
 import { Bucket } from '@app/types/bucket';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 
 export const RequestBucketAccessModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.requestBucketAccess);
