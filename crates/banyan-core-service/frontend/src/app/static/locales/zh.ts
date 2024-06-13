@@ -392,16 +392,17 @@ export default {
                 },
                 uploadFile: {
                     title: "上传文件",
-                    subtitle: "从您的设备选择要上传的文件，或使用拖放",
                     selectDrive: "选择驱动器",
                     createNewDrive: "创建新驱动器",
                     selectFolder: "选择文件夹",
-                    clickToUpload: "单击上传",
-                    orDragAndDrop: "或拖放",
+                    clickToUpload: "拖放文件到这里上传，或点击这里上传",
+                    maxFileSize: "最大文件大小：100 MB",
+                    maxFileSizeError: "文件必须小于 100 MB。对于较大的文件",
+                    useCLI: "使用 CLI",
                     cancel: "取消",
                     upload: "上传",
-                    uploadError: "上传时出现问题。 请重试",
-                    tryAgain: "重试",
+                    uploadError: "上传时出现问题。请重试",
+                    tryAgain: "重试"
                 }
             }
         },

@@ -31,6 +31,7 @@ export const UploadFileModal: React.FC<{
     const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(bucket || null);
     const [selectedFolder, setSelectedFolder] = useState<string[]>(path);
     const [previewFiles, setPreviewFiles] = useState<FileList | null>(null);
+    const [fileSizeError, setFileSizeError] = useState(false);
     const isUploadDataFilled = useMemo(() => Boolean(selectedBucket && previewFiles?.length), [selectedBucket, previewFiles]);
     const folderLocation = useFolderLocation();
 
@@ -45,6 +46,11 @@ export const UploadFileModal: React.FC<{
     const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files) { return; };
 
+        if (Array.from(event.target.files).some(file => file.size >= 1e+8)) {
+            setFileSizeError(true);
+
+            return;
+        };
         setPreviewFiles(event.target.files);
     };
 
@@ -53,6 +59,12 @@ export const UploadFileModal: React.FC<{
         event.stopPropagation();
 
         if (!event.dataTransfer.files) { return; };
+
+        if (Array.from(event.dataTransfer.files).some(file => file.size >= 1e+8)) {
+            setFileSizeError(true);
+
+            return;
+        };
 
         setPreviewFiles(event.dataTransfer.files);
     };
@@ -79,13 +91,21 @@ export const UploadFileModal: React.FC<{
     };
 
     const returnToUploadModal = (id: string) => {
-        dispatch(openModal({ content: <UploadFileModal path={path} bucketId={id} driveSelect={driveSelect} /> }));
+        dispatch(openModal({
+            content: <UploadFileModal path={path} bucketId={id} driveSelect={driveSelect} />,
+            path
+        }));
     };
 
     const addNewBucket = () => {
         dispatch(openModal({
             content: <CreateDriveModal onSuccess={returnToUploadModal} />,
-            onBack: () => dispatch(openModal({ content: <UploadFileModal path={path} bucketId={bucketId} driveSelect={driveSelect} /> }))
+            onBack: () => {
+                dispatch(openModal({
+                    content: <UploadFileModal path={path} bucketId={bucketId} driveSelect={driveSelect} />,
+                    path
+                }))
+            }
         }));
     };
 
@@ -108,12 +128,9 @@ export const UploadFileModal: React.FC<{
     }, [createdFolderPath]);
 
     return (
-        <div className="w-modal flex flex-col gap-4">
+        <div className="w-[530px] flex flex-col gap-4">
             <div>
                 <h4 className="text-m font-semibold ">{`${messages.title}`}</h4>
-                <p className="mt-2 text-text-600">
-                    {`${messages.subtitle}`}
-                </p>
             </div>
             {
                 driveSelect ?
@@ -147,14 +164,15 @@ export const UploadFileModal: React.FC<{
                                         folder={folder}
                                         createdFolderPath={createdFolderPath}
                                         driveSelect={driveSelect}
-                                    />
+                                    />,
+                                    path
                                 }))
                         }
                     />
                 </div>
             }
             <label
-                className="mt-10 flex flex-col items-center justify-center gap-4 px-6 py-4 border-2 border-border-darken rounded-xl  text-xs cursor-pointer"
+                className="mt-2 flex flex-col items-center justify-center gap-4 px-6 py-4 pt-7 border-2 border-dashed border-border-darken  text-xs cursor-pointer"
                 onDrop={handleDrop}
                 onDragOver={handleDrag}
             >
@@ -172,9 +190,9 @@ export const UploadFileModal: React.FC<{
                     :
                     <>
                         <Upload />
-                        <span className="text-text-600">
-                            <b className="text-text-900">{`${messages.clickToUpload}`} </b>
-                            {`${messages.orDragAndDrop}`}
+                        <span className="flex flex-col gap-2 items-center text-text-900 font-light">
+                            <b className="">{`${messages.clickToUpload}`} </b>
+                            <b className="text-text-600">{`${messages.maxFileSize}`} </b>
                         </span>
                     </>
                 }
@@ -185,6 +203,20 @@ export const UploadFileModal: React.FC<{
                     onChange={handleChange}
                 />
             </label>
+
+            {fileSizeError &&
+                <div className="flex justify-center text-error ">
+                    {messages.maxFileSizeError}
+                    <a
+                        className='ml-1 underline font-bold'
+                        href="https://github.com/banyancomputer/banyan-cli"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        {messages.useCLI}
+                    </a>
+                </div>
+            }
             <div className="flex items-center justify-end gap-3 text-xs" >
                 <SecondaryButton
                     action={close}

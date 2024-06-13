@@ -25,7 +25,8 @@ export const FolderActions: React.FC<{ bucket: Bucket; folder: BrowserObject; pa
                         bucket={bucket}
                         folder={folder}
                         path={[...path, folder.name]}
-                    />
+                    />,
+                    path: [bucket.name, ...path, folder.name]
                 }
             )
         );
@@ -66,7 +67,8 @@ export const FolderActions: React.FC<{ bucket: Bucket; folder: BrowserObject; pa
                     file={folder}
                     parrentFolder={parrentFolder}
                     path={path}
-                />
+                />,
+                path: [bucket.name, ...path]
             }
         ));
     };
