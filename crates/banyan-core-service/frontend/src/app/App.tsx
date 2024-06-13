@@ -23,7 +23,7 @@ import { getBuckets, updateStorageLimitsState, updateStorageUsageState } from '@
 import { UploadWorker } from '@/workers/upload.worker';
 
 const App = () => {
-    const worker = new Worker(new URL('../../workers/upload.worker.ts', import.meta.url));
+    const worker = new Worker(new URL('../workers/upload.worker.ts', import.meta.url));
     const uploadWorker = wrap<UploadWorker>(worker);
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
