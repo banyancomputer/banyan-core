@@ -10,7 +10,8 @@ import { useAppDispatch, useAppSelector } from '@app/store';
 import { UserClient } from '@/api/user';
 import { validateKeyphrase } from '@utils/validation';
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
-import { initializeKeystore } from '../store/keystore/actions';
+import { initializeKeystore } from '@store/keystore/actions';
+import { ToastNotifications } from '../utils/toastNotifications';
 
 import { Done } from '@static/images/common';
 
@@ -46,7 +47,7 @@ const CreateEncryptionKey = () => {
             unwrapResult(await dispatch(initializeKeystore(keyphrase)));
             navigate('/');
         } catch (error: any) {
-            console.log(`Failed to initialize keystore: ${error.message}`);
+            ToastNotifications.error(`Failed to initialize keystore: ${error.message}`);
         };
     };
 

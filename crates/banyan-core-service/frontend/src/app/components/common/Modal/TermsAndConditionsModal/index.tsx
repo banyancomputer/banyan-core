@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { closeModal } from '@store/modals/slice';
 import { TermsAndColditionsClient } from '@/api/termsAndConditions';
 import { User } from '@/entities/user';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 
 const termsClient = new TermsAndColditionsClient();
 

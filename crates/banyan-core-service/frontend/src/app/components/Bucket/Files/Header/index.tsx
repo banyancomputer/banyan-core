@@ -7,10 +7,9 @@ import { CreateFolderModal } from '@components/common/Modal/CreateFolderModal';
 
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 import { closeModal, openModal } from '@store/modals/slice';
-import { useTomb } from '@/app/contexts/tomb';
 import { stringToBase64 } from '@utils/base64';
 import { getLocalStorageItem, setLocalStorageItem } from '@utils/localStorage';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 import { Tooltip } from '@components/common/Tooltip';
 
 import { Close, Copy, Upload } from '@static/images/common';
@@ -23,7 +22,7 @@ const storageUsageClient = new StorageUsageClient();
 const BucketHeader = () => {
     const messages = useAppSelector(state => state.locales.messages.coponents.bucket.files.header);
     const folderLocation = useFolderLocation();
-    const { selectedBucket, areBucketsLoading } = useTomb();
+    const { selectedBucket, isLoading } = useAppSelector(state => state.tomb);
     const params = useParams();
     const bucketId = params.id;
     const [isBannerVisible, setIsBannerVisible] = useState(false);
@@ -37,7 +36,8 @@ const BucketHeader = () => {
                     content: <UploadFileModal
                         bucket={selectedBucket}
                         path={folderLocation}
-                    />
+                    />,
+                    path: [selectedBucket.name, ...folderLocation]
                 }
             )
             );
@@ -68,7 +68,8 @@ const BucketHeader = () => {
                     bucket={selectedBucket!}
                     path={folderLocation}
                     onSuccess={hideModal}
-                />
+                />,
+                path: [selectedBucket?.name || '', ...folderLocation]
             }
         )
         );
@@ -99,7 +100,7 @@ const BucketHeader = () => {
     return (
         <div className="mb-8">
             <div className="mb-4 flex flex-col w-full">
-                {!areBucketsLoading
+                {!isLoading
                     ?
                     <>
                         <h2 className="mb-2 text-lg font-semibold">

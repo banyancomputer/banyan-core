@@ -5,7 +5,7 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { closeModal } from '@store/modals/slice';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 
 export const ShareFileModal: React.FC<{ link: string }> = ({ link }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.shareFile);

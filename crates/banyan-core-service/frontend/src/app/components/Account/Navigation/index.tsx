@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 
-import { useAppSelector } from '@/app/store';
+import { useAppSelector } from '@store/index';
 
 class SettingsLink {
     constructor(

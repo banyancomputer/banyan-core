@@ -8,8 +8,9 @@ import { DraggingPreview } from './DraggingPreview';
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { getDateLabel } from '@/app/utils/date';
 import { convertFileSize } from '@/app/utils/storage';
-import { useFilePreview } from '@/app/contexts/filesPreview';
 import { handleDrag, handleDragEnd, handleDragStart } from '@utils/dragHandlers';
+import { openFile } from '@store/filePreview/slice';
+import { useAppDispatch } from '@store/index';
 
 export const FileRow: React.FC<{
     file: BrowserObject;
@@ -19,8 +20,8 @@ export const FileRow: React.FC<{
     nestingLevel?: number;
     parrentFolder?: BrowserObject;
 }> = ({ file, bucket, nestingLevel = 0, path = [], parrentFolder, siblingFiles }) => {
-    const { openFile } = useFilePreview();
     const [isDragging, setIsDragging] = useState(false);
+    const dispatch = useAppDispatch();
 
     const previewFile = (event: React.MouseEvent<HTMLTableRowElement, MouseEvent>, bucket: Bucket, file: BrowserObject) => {
         //@ts-ignore
@@ -28,7 +29,7 @@ export const FileRow: React.FC<{
             return;
         };
 
-        openFile(bucket, file, siblingFiles, path, parrentFolder);
+        dispatch(openFile({ bucket, file, files: siblingFiles, path, parrentFolder }));
     };
 
     return (

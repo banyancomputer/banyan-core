@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { unwrapResult } from '@reduxjs/toolkit';
 import { useNavigate } from 'react-router-dom';
 
 import { BucketActions } from '@components/common/BucketActions';
@@ -7,25 +8,31 @@ import { Tooltip } from '@components/common/Tooltip';
 
 import { Bucket as IBucket } from '@/app/types/bucket';
 import { popupClickHandler } from '@/app/utils';
-import { useFilesUpload } from '@contexts/filesUpload';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { preventDefaultDragAction } from '@utils/dragHandlers';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { uploadFiles } from '@store/filesUpload/actions';
+import { mountBucket } from '@store/tomb/actions';
 
 import { BucketIcon } from '@static/images/buckets';
 import { Dots, Question } from '@static/images/common';
+import { useFolderLocation } from '@/app/hooks/useFolderLocation';
 
 export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.home.bucket);
-    const { uploadFiles } = useFilesUpload();
+    const dispatch = useAppDispatch();
     const bucketRef = useRef<HTMLDivElement | null>(null);
     const bucketActionsRef = useRef<HTMLDivElement | null>(null);
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [isContextMenuVisible, setIsContextMenuVisible] = useState(false);
     const navigate = useNavigate();
     type messagesKeys = keyof typeof messages;
+    const folderLocation = useFolderLocation();
 
-    const onContextMenu = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    const onContextMenu = async (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+        if (!bucket.mount) {
+            await dispatch(mountBucket(bucket));
+        };
         event.preventDefault();
         const bucketActionnBottom = bucketActionsRef.current!.clientHeight + event.clientY;
         const bucketActionsRight = bucketActionsRef.current!.clientWidth + event.clientX;
@@ -49,7 +56,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
     };
 
     const openBucket = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-        if (!bucket.mount || bucket.locked) return;
+        if (bucket.locked) return;
         // @ts-ignore
         if (event.target.id === 'bucketContextMenu') { return; }
         navigate(`/drive/${bucket.id}`);
@@ -61,7 +68,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
         if (!event?.dataTransfer.files.length) { return; }
 
         try {
-            await uploadFiles(event.dataTransfer.files, bucket, []);
+            unwrapResult(await dispatch(uploadFiles({ fileList: event.dataTransfer.files, bucket, path: [], folderLocation })));
         } catch (error: any) {
             console.error('failed to upload files', error);
             ToastNotifications.error(`${messages.uploadError}`, `${messages.tryAgain}`, () => { });
@@ -88,7 +95,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
 
     return (
         <div
-            className={`rounded-xl transition-all border-1 border-border-regular ${!bucket.mount || bucket.locked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+            className={`rounded-xl transition-all border-1 border-border-regular ${bucket.locked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             ref={bucketRef}
             onContextMenu={onContextMenu}
             onClick={openBucket}

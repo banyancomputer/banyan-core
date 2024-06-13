@@ -1,19 +1,19 @@
 import React from 'react';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { Bucket } from '@/app/types/bucket';
 import { closeModal } from '@store/modals/slice';
-import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { takeColdSnapshot, updateStorageUsageState } from '@store/tomb/actions';
 
 import { Bolt } from '@static/images/common';
 
 export const TakeSnapshotModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.takeSnapshot);
-    const { takeColdSnapshot } = useTomb();
     const dispatch = useAppDispatch();
 
     const close = () => {
@@ -22,7 +22,8 @@ export const TakeSnapshotModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     const takeSnapshot = async () => {
         try {
-            await takeColdSnapshot(bucket);
+            unwrapResult(await dispatch(takeColdSnapshot(bucket)));
+            unwrapResult(await dispatch(updateStorageUsageState()));
             ToastNotifications.notify(`${messages.snapshotWasTaken}`, <Bolt width="20px" height="20px" />);
             close();
         } catch (error: any) {

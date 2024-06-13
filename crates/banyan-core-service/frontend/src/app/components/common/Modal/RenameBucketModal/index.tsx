@@ -1,21 +1,21 @@
 import React, { useState } from 'react';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
 import { closeModal, openModal } from '@store/modals/slice';
 import { Bucket } from '@/app/types/bucket';
-import { useTomb } from '@/app/contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 
 import { Done } from '@static/images/common';
+import { renameBucket } from '@store/tomb/actions';
 
 export const RenameBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const dispatch = useAppDispatch();
     const messages = useAppSelector(state => state.locales.messages.coponents.common.modal.renameBucket);
     const [newName, setNewName] = useState('');
-    const { renameBucket } = useTomb();
 
     const close = () => {
         dispatch(closeModal());
@@ -23,7 +23,7 @@ export const RenameBucketModal: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     const rename = async () => {
         try {
-            await renameBucket(bucket, newName);
+            unwrapResult(await dispatch(renameBucket({ bucket, name: newName })));
             close();
             ToastNotifications.notify(`${messages.drive} "${bucket.name}" ${messages.wasRenamed}`, <Done width="20px" height="20px" />);
         } catch (error: any) {

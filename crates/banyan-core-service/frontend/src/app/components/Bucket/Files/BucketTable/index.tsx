@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { ActionsCell } from '@components/common/ActionsCell';
 import { BucketActions } from '@components/common/BucketActions';
@@ -9,19 +10,19 @@ import { FileRow } from '@components/Bucket/Files/BucketTable/FileRow';
 
 import { BrowserObject, Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
-import { sortByType, sortFiles } from '@app/utils';
-import { useFilesUpload } from '@contexts/filesUpload';
+import { sortByType, sortFiles } from '@utils/index';
 import { ToastNotifications } from '@utils/toastNotifications';
 import { preventDefaultDragAction } from '@utils/dragHandlers';
-import { useTomb } from '@contexts/tomb';
-import { useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { getSelectedBucketFiles, moveTo } from '@store/tomb/actions';
+import { setBucketFiles } from '@store/tomb/slice';
+import { uploadFiles } from '@store/filesUpload/actions';
 
 export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const params = useParams();
+    const dispatch = useAppDispatch();
     const bucketId = params.id;
     const messages = useAppSelector(state => state.locales.messages.coponents.bucket.files.bucketTable);
-    const { uploadFiles } = useFilesUpload();
-    const { getSelectedBucketFiles, moveTo, selectBucket } = useTomb();
     const [sortState, setSortState] = useState<{ criteria: string; direction: 'ASC' | 'DESC' | '' }>({ criteria: 'name', direction: 'DESC' });
     const folderLocation = useFolderLocation();
     const siblingFiles = useMemo(() => bucket.files?.filter(file => file.type !== 'dir'), [bucket.files]);
@@ -35,9 +36,9 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
         if (event?.dataTransfer.files.length) {
             try {
-                await uploadFiles(event.dataTransfer.files, bucket, folderLocation);
+                unwrapResult(await dispatch(uploadFiles({ fileList: event.dataTransfer.files, bucket, path: folderLocation, folderLocation })));
             } catch (error: any) {
-                ToastNotifications.error(messages.uploadError, messages.tryAgain, () => { });
+                ToastNotifications.error(messages.uploadError);
             };
 
             return;
@@ -46,14 +47,12 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
         const dragData = event.dataTransfer.getData('browserObject');
         if (dragData) {
             try {
-
                 const droppedItem: { name: string; path: string[] } = JSON.parse(dragData);
-
                 if (!droppedItem.path.length) { return; }
 
-                await moveTo(bucket, [...droppedItem.path, droppedItem.name], [], droppedItem.name);
+                unwrapResult(await dispatch(moveTo({ bucket, from: [...droppedItem.path, droppedItem.name], to: [], name: droppedItem.name })));
                 ToastNotifications.notify(messages.fileWasMoved);
-                await getSelectedBucketFiles([]);
+                unwrapResult(await dispatch(getSelectedBucketFiles([])));
             } catch (error: any) {
                 ToastNotifications.error(messages.moveToError, messages.tryAgain, () => handleDrop(event));
             };
@@ -62,11 +61,10 @@ export const BucketTable: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     useEffect(() => {
         if (!bucket.files) { return; }
-        selectBucket({
-            ...bucket,
-            files: [...bucket.files].sort((prev: BrowserObject, next: BrowserObject) => sortFiles(prev, next, sortState.criteria, sortState.direction !== 'ASC')).sort(sortByType),
-        });
-    }, [sortState.criteria, sortState.direction, bucket]);
+        dispatch(setBucketFiles(
+            [...bucket.files].sort((prev: BrowserObject, next: BrowserObject) => sortFiles(prev, next, sortState.criteria, sortState.direction !== 'ASC')).sort(sortByType),
+        ));
+    }, [sortState.criteria, sortState.direction]);
 
     useEffect(() => {
         setSortState({ criteria: 'name', direction: 'DESC' });

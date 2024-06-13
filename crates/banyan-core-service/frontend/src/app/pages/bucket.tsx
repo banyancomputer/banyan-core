@@ -1,32 +1,51 @@
 import React, { useEffect } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
+import { unwrapResult } from '@reduxjs/toolkit';
 
-import { useTomb } from '@/app/contexts/tomb';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { getSelectedBucketFiles, mountBucket } from '@store/tomb/actions';
+import { selectBucket, setIsLoading } from '@store/tomb/slice';
+import { ToastNotifications } from '@utils/toastNotifications';
 
 const Bucket = () => {
     const params = useParams();
+    const dispatch = useAppDispatch();
+    const { selectedBucket, buckets } = useAppSelector(state => state.tomb);
     const bucketId = params.id;
-    const { buckets, selectedBucket, selectBucket, getSelectedBucketFiles } = useTomb();
     const folderLocation = useFolderLocation();
 
     useEffect(() => {
-        if (selectedBucket?.id !== bucketId || selectedBucket?.locked) { return; }
+        if (selectedBucket?.id !== bucketId || selectedBucket?.locked || !selectedBucket?.mount) { return; }
         (async () => {
             try {
-                getSelectedBucketFiles(folderLocation);
+                unwrapResult(await dispatch(getSelectedBucketFiles(folderLocation)));
             } catch (error: any) { };
         })();
-    }, [folderLocation, selectedBucket?.id]);
+    }, [folderLocation, selectedBucket?.id, selectedBucket?.mount]);
 
     useEffect(() => {
         const bucket = buckets.find(bucket => bucket.id === bucketId);
-        bucket && selectBucket(bucket);
-    }, [bucketId, buckets.length]);
+        bucket && dispatch(selectBucket(bucket));
+    }, [bucketId, buckets]);
 
     useEffect(() => () => {
-        selectBucket(null);
+        dispatch(selectBucket(null));
     }, []);
+
+    useEffect(() => {
+        if (!selectedBucket || selectedBucket?.mount) return;
+
+        (async () => {
+            try {
+                dispatch(setIsLoading(true));
+                unwrapResult(await dispatch(mountBucket(selectedBucket!)));
+                dispatch(setIsLoading(false));
+            } catch (error: any) {
+                ToastNotifications.error('Failed to mount bucket');
+            }
+        })()
+    }, [selectedBucket?.mount, selectedBucket?.id, buckets])
 
     return (
         <section className="flex flex-col flex-grow">

@@ -6,7 +6,7 @@ import { SecondaryButton } from '@components/common/SecondaryButton';
 import { SubscriptionPlanModal } from '@components/common/Modal/SubscriptionPlanModal';
 
 import { closeModal, openModal } from '@store/modals/slice';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 import { RoutesConfig } from '@/app/routes';
 
 import { OutOfStorageIcon } from '@/app/static/images/common/modal';

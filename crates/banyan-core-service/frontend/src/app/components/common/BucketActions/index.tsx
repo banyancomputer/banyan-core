@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { unwrapResult } from '@reduxjs/toolkit';
 
 import { RenameBucketModal } from '@components/common/Modal/RenameBucketModal';
 import { DeleteDriveModal } from '@/app/components/common/Modal/DeleteDriveModal';
@@ -12,16 +13,15 @@ import { Action } from '@components/Bucket/Files/BucketTable/FileActions';
 import { closeModal, openModal } from '@store/modals/slice';
 import { Bucket } from '@/app/types/bucket';
 import { useFolderLocation } from '@/app/hooks/useFolderLocation';
-import { useTomb } from '@contexts/tomb';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
+import { mountBucket } from '@store/tomb/actions';
 
 import { Bolt, DeleteHotData, Rename, Retry, Trash, Upload, Versions } from '@static/images/common';
 import { AddFolderIcon, Lock } from '@static/images/buckets';
 
 export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.common.bucketActions);
-    const { remountBucket } = useTomb();
     const bucketType = `${bucket.bucketType}_${bucket.storageClass}`;
     const folderLocation = useFolderLocation();
     const navigate = useNavigate();
@@ -38,7 +38,8 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
                     content: <UploadFileModal
                         bucket={bucket}
                         path={folderLocation}
-                    />
+                    />,
+                    path: [bucket.name, ...folderLocation]
                 }
             ));
         } catch (error: any) { }
@@ -75,7 +76,8 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const createFolder = async () => {
         dispatch(openModal(
             {
-                content: <CreateFolderModal bucket={bucket} path={folderLocation} onSuccess={hideModal} />
+                content: <CreateFolderModal bucket={bucket} path={folderLocation} onSuccess={hideModal} />,
+                path: [bucket.name, ...folderLocation]
             }
         ));
     };
@@ -94,10 +96,11 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
     const deleteBucket = async () => {
         try {
             dispatch(openModal(
-            {
-                content: <DeleteDriveModal bucket={bucket} />
-            }
-        ));
+                {
+                    content: <DeleteDriveModal bucket={bucket} />,
+                    path: [bucket.name]
+                }
+            ));
         } catch (error: any) { }
     };
 
@@ -114,7 +117,7 @@ export const BucketActions: React.FC<{ bucket: Bucket }> = ({ bucket }) => {
 
     const remount = async () => {
         try {
-            await remountBucket(bucket);
+            unwrapResult(await dispatch(mountBucket(bucket)));
         } catch (error: any) {
             ToastNotifications.error('Error on bucket remount', 'Try again', remount);
         }

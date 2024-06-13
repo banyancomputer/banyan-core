@@ -403,16 +403,17 @@ export default {
                 },
                 uploadFile: {
                     title: "Dateien hochladen",
-                    subtitle: "Wählen Sie Dateien zum Hochladen von Ihrem Gerät aus oder verwenden Sie Drag & Drop",
                     selectDrive: "Laufwerk auswählen",
                     createNewDrive: "Neues Laufwerk erstellen",
                     selectFolder: "Ordner auswählen",
-                    clickToUpload: "Klicken Sie zum Hochladen",
-                    orDragAndDrop: "oder ziehen Sie Dateien hierher",
+                    clickToUpload: "Dateien hierher ziehen & ablegen, um sie hochzuladen, oder hier klicken, um hochzuladen",
+                    maxFileSize: "Maximale Dateigröße: 100 MB",
+                    maxFileSizeError: "Die Datei muss kleiner als 100 MB sein. Für größere Dateien",
+                    useCLI: "verwenden Sie die Befehlszeilenschnittstelle",
                     cancel: "Abbrechen",
                     upload: "Hochladen",
                     uploadError: "Beim Hochladen ist ein Problem aufgetreten. Bitte versuchen Sie es erneut",
-                    tryAgain: "Erneut versuchen",
+                    tryAgain: "Erneut versuchen"
                 }
             }
         },

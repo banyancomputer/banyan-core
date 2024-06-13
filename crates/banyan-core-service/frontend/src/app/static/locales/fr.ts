@@ -403,16 +403,17 @@ export default {
                 },
                 uploadFile: {
                     title: "Télécharger des fichiers",
-                    subtitle: "Choisissez des fichiers à télécharger depuis votre appareil, ou utilisez le glisser-déposer",
-                    selectDrive: "Sélectionner le lecteur",
-                    createNewDrive: "Créer un nouveau lecteur",
-                    selectFolder: "Sélectionner un dossier",
-                    clickToUpload: "Cliquez pour téléverser",
-                    orDragAndDrop: "ou glisser-déposer",
+                    selectDrive: "Sélectionner le disque",
+                    createNewDrive: "Créer un nouveau disque",
+                    selectFolder: "Sélectionner le dossier",
+                    clickToUpload: "Faites glisser & déposez les fichiers ici pour les télécharger, ou cliquez ici pour télécharger",
+                    maxFileSize: "Taille maximale du fichier : 100 Mo",
+                    maxFileSizeError: "Le fichier doit être inférieur à 100 Mo. Pour les fichiers plus volumineux",
+                    useCLI: "utilisez l'interface en ligne de commande",
                     cancel: "Annuler",
-                    upload: "Téléverser",
-                    uploadError: "Un problème est survenu avec le téléchargement. Veuillez réessayer",
-                    tryAgain: "Réessayer",
+                    upload: "Télécharger",
+                    uploadError: "Un problème est survenu lors du téléchargement. Veuillez réessayer",
+                    tryAgain: "Réessayer"
                 }
             }
         },

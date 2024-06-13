@@ -3,9 +3,9 @@ import React from 'react';
 import { InvoiceDetails } from '../Invoice';
 
 import { Invoice } from '@/entities/billing';
-import { useAppDispatch, useAppSelector } from '@/app/store';
+import { useAppDispatch, useAppSelector } from '@store/index';
 import { getDateLabel } from '@/app/utils/date';
-import { selectInvoice } from '@/app/store/billing/slice';
+import { selectInvoice } from '@store/billing/slice';
 
 export const InvoicesTable: React.FC<{ invoices: Invoice[] }> = ({ invoices }) => {
     const messages = useAppSelector(state => state.locales.messages.coponents.account.billing.invoices.invoicesTable);
