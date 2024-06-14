@@ -1,5 +1,6 @@
 use crate::database::{Database, DatabaseConnection};
 
+#[allow(dead_code)]
 #[derive(sqlx::FromRow)]
 pub struct StorageHostsMetadatasStorageGrants {
     pub storage_host_id: String,

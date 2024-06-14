@@ -43,7 +43,7 @@ RUN if [ -z "$SERVICE" ]; then \
     fi
 
 # install os packages
-RUN apk add --virtual build-dependencies curl tree build-base openssl openssl-dev perl mold binutils
+RUN apk update && apk add --virtual build-dependencies curl tree build-base openssl openssl-dev perl mold binutils
 
 # install cargo-binstall; bump the env variable to purge the cache
 ENV BUILD_UTILS_CACHE_VERSION=v1

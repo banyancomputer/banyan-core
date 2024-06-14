@@ -6,12 +6,14 @@ import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
 import { resolve } from 'path';
 import { rm } from 'node:fs/promises';
+import { comlink } from "vite-plugin-comlink";
 
 const PRODUCTION_PLUGINS = [
 	react(),
 	viteCompression(),
 	wasm(),
-	topLevelAwait()
+	topLevelAwait(),
+	comlink()
 ];
 
 const DEVELOPMENT_PLUGINS = [
@@ -23,7 +25,8 @@ const DEVELOPMENT_PLUGINS = [
 		async buildStart() {
 			await rm(resolve(__dirname, '../dist/assets'), { recursive: true, force: true });
 		}
-	}
+	},
+	comlink()
 ];
 
 export default ({ mode }) => {
@@ -43,6 +46,12 @@ export default ({ mode }) => {
 			minify: isProduction ? "esbuild": false,
 			outDir: path.resolve(__dirname, "../dist/"),
 			cssCodeSplit: true,
+		},
+		worker: {
+			plugins: [topLevelAwait(), wasm(), comlink()],
+			rollupOptions: {
+				watch: false,
+			}
 		},
 		plugins: isProduction ? PRODUCTION_PLUGINS : DEVELOPMENT_PLUGINS,
 		resolve: {

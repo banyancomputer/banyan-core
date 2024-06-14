@@ -28,6 +28,7 @@ impl<'a> NewStripeCheckoutSession<'a> {
     }
 }
 
+#[allow(dead_code)]
 #[derive(sqlx::FromRow)]
 pub struct StripeCheckoutSession {
     pub id: String,

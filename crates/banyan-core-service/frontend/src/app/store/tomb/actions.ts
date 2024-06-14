@@ -248,13 +248,13 @@ export const uploadFile = createAsyncThunk(
 			file: ArrayBuffer,
 			folder?: BrowserObject
 		}, { getState }) => {
-		const { tomb: { selectedBucket } } = getState() as RootState;
+		const { tomb: { selectedBucket, worker } } = getState() as RootState;
 		const result = { files: bucket.files, isSnapshotValid: bucket.isSnapshotValid, id: bucket.id };
 		const mount = bucket.mount!;
 		const extstingFiles = (await mount.ls(uploadPath)).map(file => file.name);
 
 		let fileName = handleNameDuplication(name, extstingFiles);
-		await mount.write([...uploadPath, fileName], file);
+		await worker?.uploadFile(bucket.id, uploadPath, fileName, file);
 		if (bucket.id !== selectedBucket?.id) return result;
 
 		if (folder) {
