@@ -3,6 +3,8 @@ import { StorageLimits, StorageUsage } from "@/entities/storage";
 import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 import { TombWasm } from "tomb_build/banyanfs";
 import { createBucketAndMount, getSelectedBucketSnapshots, deleteFile, getBuckets, getExpandedFolderFiles, getSelectedBucketFiles, mountBucket, moveTo, renameBucket, createDirectory, updateStorageUsageState, updateStorageLimitsState, uploadFile, takeColdSnapshot } from "./actions";
+import { UploadWorker } from "@/workers/upload.worker";
+import { Remote } from "comlink";
 
 interface TombState {
     tomb: TombWasm | null;
@@ -13,6 +15,7 @@ interface TombState {
     storageLimits: StorageLimits;
     isLoading: boolean;
     encryptionKey: {privatePem: string, publicPem: string } | null;
+    worker: Remote<UploadWorker> | null;
 };
 
 const initialState: TombState = {
@@ -23,7 +26,8 @@ const initialState: TombState = {
     storageUsage: new StorageUsage(),
     storageLimits: new StorageLimits(),
     isLoading: true,
-    encryptionKey: null
+    encryptionKey: null,
+    worker: null
 };
 
 const tombSlice = createSlice({
@@ -47,6 +51,9 @@ const tombSlice = createSlice({
         },
         setIsLoading(state, action: PayloadAction<boolean>) {
             state.isLoading = action.payload
+        },
+        setWorker(state, action: PayloadAction<Remote<UploadWorker>>) {
+            state.worker = action.payload;
         }
     },
     extraReducers(builder) {
@@ -121,5 +128,5 @@ const tombSlice = createSlice({
     }
 });
 
-export const { selectBucket, setTomb, setBucketFiles, setIsLoading, setEncryptionKey, updateBucketsState } = tombSlice.actions;
+export const { selectBucket, setTomb, setWorker, setBucketFiles, setIsLoading, setEncryptionKey, updateBucketsState } = tombSlice.actions;
 export default tombSlice.reducer;
