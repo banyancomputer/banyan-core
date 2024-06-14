@@ -1,6 +1,7 @@
 use crate::database::models::TaxClass;
 use crate::database::DatabaseConnection;
 
+#[allow(dead_code)]
 #[derive(sqlx::FromRow)]
 pub struct StripeProduct {
     pub id: String,

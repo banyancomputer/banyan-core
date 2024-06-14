@@ -42,6 +42,7 @@ impl<'a> NewInvoice<'a> {
     }
 }
 
+#[allow(dead_code)]
 #[derive(sqlx::FromRow)]
 pub struct Invoice {
     pub id: String,

@@ -2,6 +2,7 @@ use time::OffsetDateTime;
 
 use crate::database::models::SnapshotState;
 
+#[allow(dead_code)]
 #[derive(Debug, sqlx::FromRow)]
 pub struct Snapshot {
     pub id: String,

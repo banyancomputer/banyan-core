@@ -38,6 +38,7 @@ impl NewMetadata<'_> {
     }
 }
 
+#[allow(dead_code)]
 pub struct Metadata {
     pub id: String,
     pub bucket_id: String,
