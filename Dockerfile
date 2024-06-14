@@ -43,7 +43,7 @@ RUN if [ -z "$SERVICE" ]; then \
     fi
 
 # install os packages
-RUN apk add --virtual build-dependencies curl tree build-base openssl openssl-dev perl mold binutils
+RUN apk update && apk add --virtual build-dependencies curl tree build-base openssl openssl-dev perl mold binutils
 
 # install cargo-binstall; bump the env variable to purge the cache
 ENV BUILD_UTILS_CACHE_VERSION=v1
@@ -59,7 +59,6 @@ WORKDIR /usr/src/app
 
 
 COPY ./Cargo.toml ./Cargo.lock rust-toolchain.toml deny.toml ./
-COPY crates/banyan-api-client/Cargo.toml               ./crates/banyan-api-client/
 COPY crates/banyan-car-analyzer/Cargo.toml             ./crates/banyan-car-analyzer/
 COPY crates/banyan-core-service/Cargo.toml             ./crates/banyan-core-service/
 COPY crates/banyan-object-store/Cargo.toml             ./crates/banyan-object-store/
@@ -82,7 +81,6 @@ RUN --mount=type=cache,id=${CARGO_BUILD_CACHE_ID},target=/usr/src/app/target \
     cargo fetch --manifest-path ./Cargo.toml
 
 # source step
-COPY crates/banyan-api-client/               ./crates/banyan-api-client/
 COPY crates/banyan-car-analyzer/             ./crates/banyan-car-analyzer/
 COPY crates/banyan-core-service/             ./crates/banyan-core-service/
 COPY crates/banyan-object-store/             ./crates/banyan-object-store/

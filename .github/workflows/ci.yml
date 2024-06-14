@@ -36,18 +36,19 @@ jobs:
       service: ${{ matrix.job.service }}
       frontend: ${{ matrix.job.frontend }}
 
-  docker:
-    uses: ./.github/workflows/docker.yml
-    # rust and node testing/auditing must pass before producing a docker image
-    needs:
-      - rust
-      - node
-    strategy:
-      fail-fast: false
-      matrix:
-        service:
-          - banyan-core-service
-          - banyan-staging-service
-          - banyan-storage-provider-service
-    with:
-      service: ${{ matrix.service }}
+  # Needs to be split out so it doesn't run on every push to PRs
+  #docker:
+  #  uses: ./.github/workflows/docker.yml
+  #  # rust and node testing/auditing must pass before producing a docker image
+  #  needs:
+  #    - rust
+  #    - node
+  #  strategy:
+  #    fail-fast: false
+  #    matrix:
+  #      service:
+  #        - banyan-core-service
+  #        - banyan-staging-service
+  #        - banyan-storage-provider-service
+  #  with:
+  #    service: ${{ matrix.service }}
