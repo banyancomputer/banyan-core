@@ -90,6 +90,7 @@ pub struct Price {
 
 /// A single currently active price tier that should exist in the database. These will be
 /// automatically applied if the settings don't match what is currently in the database.
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct PricingTier {
     /// A unique string representing a single subscription family that may change price over time.

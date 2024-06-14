@@ -102,6 +102,7 @@ impl MinimalBlockLocation {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, sqlx::FromRow)]
 pub struct BlockLocations {
     pub block_id: String,
