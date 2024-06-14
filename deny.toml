@@ -52,9 +52,6 @@ allow = [
 # If we need to use a crate that violates our general policy, we can add that
 # to the list here to accept it.
 exceptions = [
-  { name = "banyan-api-client", allow = [
-    "LicenseRef-LICENSE.txt",
-  ] },
   { name = "banyan-core-service", allow = [
     "LicenseRef-LICENSE.txt",
   ] },
