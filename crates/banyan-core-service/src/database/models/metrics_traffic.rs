@@ -2,6 +2,7 @@ use time::{Date, OffsetDateTime, Time};
 
 use crate::database::DatabaseConnection;
 
+#[allow(dead_code)]
 #[derive(sqlx::FromRow)]
 pub struct MetricsTraffic {
     pub user_id: String,
