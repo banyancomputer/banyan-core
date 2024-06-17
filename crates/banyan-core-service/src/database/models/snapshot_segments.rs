@@ -1,5 +1,6 @@
 use time::OffsetDateTime;
 
+#[allow(dead_code)]
 #[derive(sqlx::FromRow, Clone, Debug)]
 pub struct SnapshotSegment {
     pub id: String,
