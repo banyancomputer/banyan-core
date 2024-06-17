@@ -3,6 +3,7 @@ import { WasmMount } from 'tomb-wasm-experimental';
 export interface FileMetadata {
     [key: string]:string | number;
     created: string;
+    mimeType: string;
     modified: string;
     size: number;
 };
