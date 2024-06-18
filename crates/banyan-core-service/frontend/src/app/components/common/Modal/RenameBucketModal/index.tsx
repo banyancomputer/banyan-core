@@ -4,7 +4,7 @@ import { unwrapResult } from '@reduxjs/toolkit';
 import { PrimaryButton } from '@components/common/PrimaryButton';
 import { SecondaryButton } from '@components/common/SecondaryButton';
 
-import { closeModal, openModal } from '@store/modals/slice';
+import { closeModal } from '@store/modals/slice';
 import { Bucket } from '@/app/types/bucket';
 import { ToastNotifications } from '@/app/utils/toastNotifications';
 import { useAppDispatch, useAppSelector } from '@store/index';
