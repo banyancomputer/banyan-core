@@ -44,7 +44,7 @@ export const Navigation = () => {
 		if (isBucketsVisible) { return; }
 
 		buckets.length && setIsBucketsVisible(true);
-	}, [buckets]);
+	}, [buckets.length]);
 
 	return (
 		<nav className="flex flex-col w-navbar min-w-navbar bg-navigation-primary py-6 pt-8 px-4 text-navigation-text border-r-2 border-r-navigation-border text-xs">
