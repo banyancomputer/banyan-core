@@ -186,8 +186,8 @@ export const renameBucket = createAsyncThunk(
     'renameBucket',
     async ({bucket, name}:{bucket: Bucket, name: string }, { dispatch }) => {
 		await bucket.mount?.rename(name);
-		bucket.name = name;
-		dispatch(updateBucketsState());
+
+		return { name, bucketId: bucket.id };
     }
 );
 
@@ -292,7 +292,6 @@ export const deleteBucket = createAsyncThunk(
 		if(selectedBucket?.id === id) {
 			window.location.pathname = '/';
 		};
-		dispatch(updateBucketsState());
     }
 );
 
