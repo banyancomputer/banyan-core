@@ -1,9 +1,9 @@
 import { createAsyncThunk, unwrapResult } from "@reduxjs/toolkit";
 import { RootState } from "@store/index";
-import { BrowserObject, Bucket } from "@/app/types/bucket";
+import { BrowserObject, Bucket } from "@app/types/bucket";
 import { UploadingFile, setFiles, updateFileStatus } from "./slice";
-import { FILE_SIZE_LIMIT } from "@/app/utils/storage";
-import { ToastNotifications } from "@/app/utils/toastNotifications";
+import { FILE_SIZE_LIMIT } from "@app/utils/storage";
+import { ToastNotifications } from "@app/utils/toastNotifications";
 import { BannerError, setError } from "../errors/slice";
 import { openModal } from "../modals/slice";
 import { SubscriptionPlanModal } from '@components/common/Modal/SubscriptionPlanModal';
@@ -14,7 +14,6 @@ export const uploadFiles = createAsyncThunk(
     async ({ fileList, bucket, path, folderLocation, folder }: { fileList: FileList, bucket: Bucket, path: string[], folderLocation: string[], folder?: BrowserObject }, { dispatch, getState }) => {
         const { tomb: { storageLimits, storageUsage }, locales } = getState() as RootState;
         const { contactSales, fileSizeExceeded, hardStorageLimit, softStorageLimit, seePricingPage } = locales.messages.contexts.fileUpload;
-
         const files: UploadingFile[] = Array.from(fileList).map(file => ({ file, status: 'pending' }));
 
         if (files.some(file => file.file.size > FILE_SIZE_LIMIT)) {
@@ -28,17 +27,17 @@ export const uploadFiles = createAsyncThunk(
 
         for (const file of files) {
             try {
-                if (file.file.size > storageLimits.softLimit - storageUsage.hotStorage) {
+                const isSoftStorageExeeded = file.file.size > storageLimits.softLimit - storageUsage.hotStorage;
+                const isHardStorageExeeded = file.file.size > storageLimits.hardLimit - storageUsage.hotStorage;
+                if (isSoftStorageExeeded) {
                     file.status = 'failed';
                     dispatch(updateFileStatus({ file, status: 'failed' }));
-                    file.file.size > storageLimits.hardLimit - storageUsage.hotStorage ?
-                        dispatch(setError(new BannerError(hardStorageLimit, { callback: () => { window.location.href = 'mailto:tim@banyan.computer' }, label: contactSales })))
+                    dispatch(setError(isHardStorageExeeded ?
+                        new BannerError(hardStorageLimit, { callback: () => { window.location.href = 'mailto:tim@banyan.computer' }, label: contactSales })
                         :
-                        dispatch(setError(new BannerError(softStorageLimit, {
-                            callback: () => {
-                                dispatch(openModal({ content: <SubscriptionPlanModal /> }))
-                            }, label: seePricingPage
-                        })));
+                        new BannerError(softStorageLimit, { callback: () => { dispatch(openModal({ content: <SubscriptionPlanModal /> })) }, label: seePricingPage })
+                    ));
+                    return;
                 };
 
                 dispatch(updateFileStatus({ file, status: 'uploading' }));

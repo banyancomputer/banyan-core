@@ -12,7 +12,7 @@ import { openModal } from '@store/modals/slice';
 import { unwrapResult } from '@reduxjs/toolkit';
 import { purgeKeystore } from '@store/keystore/actions';
 
-import { LogoutAlternative, Settings } from '@static/images/common';
+import { Logout, Settings } from '@static/images/common';
 
 export const ProfileControls = () => {
     const navigate = useNavigate();
@@ -44,7 +44,7 @@ export const ProfileControls = () => {
 
     const options = [
         new Action(`${messages.settings}`, <Settings />, goTo('/account/profile')),
-        new Action(`${messages.logout}`, <LogoutAlternative />, logout),
+        new Action(`${messages.logout}`, <Logout />, logout),
     ];
 
     useEffect(() => {
@@ -98,4 +98,4 @@ export const ProfileControls = () => {
             </div>
         </div>
     )
-}
+};

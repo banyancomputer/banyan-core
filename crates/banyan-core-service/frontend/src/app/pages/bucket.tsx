@@ -45,7 +45,7 @@ const Bucket = () => {
                 ToastNotifications.error('Failed to mount bucket');
             }
         })()
-    }, [selectedBucket?.mount, selectedBucket?.id, buckets])
+    }, [selectedBucket?.mount, selectedBucket?.id, buckets]);
 
     return (
         <section className="flex flex-col flex-grow">

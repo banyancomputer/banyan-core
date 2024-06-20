@@ -1,4 +1,3 @@
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
@@ -15,8 +14,8 @@ const root = ReactDOM.createRoot(
 
 root.render(
     <Provider store={store}>
-            <BrowserRouter basename="/" future={{ v7_startTransition: true }}>
-                <App />
-            </BrowserRouter>
+        <BrowserRouter basename="/" future={{ v7_startTransition: true }}>
+            <App />
+        </BrowserRouter>
     </Provider>
 );

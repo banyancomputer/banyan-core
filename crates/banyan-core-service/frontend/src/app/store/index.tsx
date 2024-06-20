@@ -23,10 +23,6 @@ export const store = configureStore({
         filesUpload,
         tomb,
     },
-    middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware({
-            serializableCheck: false,
-        }),
 });
 
 // Infer the `RootState` and `AppDispatch` types from the store itself

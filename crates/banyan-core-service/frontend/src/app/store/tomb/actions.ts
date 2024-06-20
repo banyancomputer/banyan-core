@@ -1,11 +1,11 @@
 import { createAsyncThunk, unwrapResult } from "@reduxjs/toolkit";
 import { RootState } from "..";
 import { WasmBucket } from "tomb_build/banyanfs";
-import { destroyIsUserNew, getIsUserNew, prettyFingerprintApiKeyPem, sortByName, sortByType } from "@/app/utils";
-import { BrowserObject, Bucket, BucketKey } from "@/app/types/bucket";
+import { destroyIsUserNew, getIsUserNew, prettyFingerprintApiKeyPem, sortByName, sortByType } from "@app/utils";
+import { BrowserObject, Bucket, BucketKey } from "@app/types/bucket";
 import { StorageUsageClient } from "@/api/storageUsage";
 import { SnapshotsClient } from "@/api/snapshots";
-import { handleNameDuplication } from "@/app/utils/names";
+import { handleNameDuplication } from "@app/utils/names";
 import { updateBucketsState } from "./slice";
 
 const storageUsageClient = new StorageUsageClient();
@@ -17,25 +17,22 @@ export const getBuckets = createAsyncThunk(
     async (_, { dispatch, getState }) => {
         const { tomb: { tomb } } = getState() as RootState;
 
-        const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
         if (getIsUserNew()) {
-			dispatch(createBucketAndMount({ name: "My Drive", storageClass: 'hot', bucketType: 'interactive'}));
+			const bucket = unwrapResult(await dispatch(createBucketAndMount({ name: "My Drive", storageClass: 'hot', bucketType: 'interactive'})));
 			destroyIsUserNew();
-			return [];
+
+			return [bucket];
 		};
 
-		const buckets: Bucket[] = [];
-		for (let bucket of wasm_buckets) {
-			buckets.push(new Bucket(
-				bucket.id(),
-				bucket.name(),
-				null,
-				bucket.bucketType(),
-				bucket.storageClass(),
-			));
-		};
+		const wasm_buckets: WasmBucket[] = await tomb!.listBuckets();
 
-        return buckets;
+		return wasm_buckets.map(bucket => new Bucket(
+			bucket.id(),
+			bucket.name(),
+			null,
+			bucket.bucketType(),
+			bucket.storageClass(),
+		));
     }
 );
 
@@ -189,8 +186,8 @@ export const renameBucket = createAsyncThunk(
     'renameBucket',
     async ({bucket, name}:{bucket: Bucket, name: string }, { dispatch }) => {
 		await bucket.mount?.rename(name);
-		bucket.name = name;
-		dispatch(updateBucketsState());
+
+		return { name, bucketId: bucket.id };
     }
 );
 
@@ -253,14 +250,16 @@ export const uploadFile = createAsyncThunk(
 		await worker?.uploadFile(bucket.id, uploadPath, fileName, file);
 		if(bucket.id !== selectedBucket?.id) return result;
 
+		const files = await mount.ls(uploadPath) || [];
+
 		if (folder) {
-			const files = await mount.ls(uploadPath);
 			folder.files = files.sort(sortByName).sort(sortByType);
 
 			return result;
-		}
+		};
+
 		if (uploadPath.join('') !== folderLocation.join('')) { return result; }
-		const files = await mount.ls(uploadPath) || [];
+
 		const isSnapshotValid = await mount.hasSnapshot();
 
 		return {files:  files.sort(sortByName).sort(sortByType), isSnapshotValid, id: bucket.id}
@@ -293,7 +292,6 @@ export const deleteBucket = createAsyncThunk(
 		if(selectedBucket?.id === id) {
 			window.location.pathname = '/';
 		};
-		dispatch(updateBucketsState());
     }
 );
 

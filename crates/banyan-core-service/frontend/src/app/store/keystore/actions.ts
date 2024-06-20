@@ -5,7 +5,7 @@ import { AuthClient } from "@/api/auth";
 import { RootState } from "..";
 import { PrivateKeyMaterial } from "@utils/crypto/types";
 import { setEscrowedKeyMaterial } from "@store/keystore/slice";
-import { destroyLocalKey, getLocalKey } from "@utils";
+import { destroyLocalKey, getLocalKey } from "@utils/index";
 
 const userClient = new UserClient();
 const authClient = new AuthClient();
@@ -46,18 +46,12 @@ const authClient = new AuthClient();
         'initializeKeystore',
     async (passkey: string, { getState, dispatch }) => {
         const {keystore: {escrowedKeyMaterial, keystore}} = getState() as RootState;
-		let privateKeyMaterial: PrivateKeyMaterial;
-
 		if (!keystore) {
 			throw new Error('No keystore');
 		};
 
 		try {
-			if (escrowedKeyMaterial) {
-				privateKeyMaterial = unwrapResult(await dispatch(recoverDevice(passkey)));
-			} else {
-				privateKeyMaterial = unwrapResult(await dispatch(escrowDevice(passkey)));
-			}
+			const privateKeyMaterial = unwrapResult(await dispatch(escrowedKeyMaterial ? recoverDevice(passkey) : escrowDevice(passkey)));
 			let localKey = getLocalKey();
 			// Cache the key material encrypted with the session key
 			await keystore!.cachePrivateKeyMaterial(
