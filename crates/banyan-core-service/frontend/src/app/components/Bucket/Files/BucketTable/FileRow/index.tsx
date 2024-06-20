@@ -45,9 +45,9 @@ export const FileRow: React.FC<{
                 className="px-0 py-2"
                 style={{ paddingLeft: `${nestingLevel * 40}px` }}
             >
-                <DraggingPreview name={file.name} isDragging={isDragging} type="file" />
+                <DraggingPreview browserObject={file} isDragging={isDragging} />
                 <span>
-                    <FileCell name={file.name} type="file" />
+                    <FileCell borwserObject={file} />
                 </span>
             </td>
             <td className="px-6 py-2">{getDateLabel(+file.metadata.modified)}</td>

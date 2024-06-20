@@ -1,16 +1,16 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 
-import { BrowserObject, Bucket } from "@/app/types/bucket";
-import { fileTypes, SUPPORTED_EXTENSIONS } from "@/app/types/filesPreview";
-import { loadFilePreview } from "./actions";
+import { loadFilePreview } from './actions';
+import { BrowserObject, Bucket } from '@/app/types/bucket';
+import { SUPPORTED_FILE_TYPES } from '@/app/types/filesPreview';
 
 interface OpenedFile {
     objectUrl: string;
     blob: File | null;
-    fileType: string,
+    fileType: string;
     isLoading: boolean;
     name: string;
-    extension: string;
+    mimeType: string;
     browserObject: BrowserObject | null;
 };
 
@@ -19,9 +19,9 @@ const initialOpenedFileState: OpenedFile = {
     name: '',
     blob: null,
     fileType: '',
-    extension: '',
+    mimeType: '',
     isLoading: false,
-    browserObject: null
+    browserObject: null,
 };
 
 export interface FilePreviewState {
@@ -37,7 +37,7 @@ export const initialFilePreviewState: FilePreviewState = {
     files: [],
     bucket: null,
     parrentFolder: undefined,
-    path: []
+    path: [],
 };
 
 const filePreviewSlice = createSlice({
@@ -47,18 +47,18 @@ const filePreviewSlice = createSlice({
         closeFile(state) {
             Object.assign(state, initialFilePreviewState);
         },
-        openFile(state, action: PayloadAction<{bucket: Bucket, file: BrowserObject, files: BrowserObject[], path: string[], parrentFolder?: BrowserObject}>){
-            const {bucket, file, files, path, parrentFolder } = action.payload;
-            const fileExtension = [...file.name.split('.')].pop() || '';
-            Object.assign(state, { ...state, files, file: { ...initialOpenedFileState, name: file.name, browserObject: file, extension: fileExtension }, bucket, path, parrentFolder });
-            SUPPORTED_EXTENSIONS.some((element, index) => {
-                const result = element.includes(fileExtension);
+        openFile(state, action: PayloadAction<{bucket: Bucket; file: BrowserObject; files: BrowserObject[]; path: string[]; parrentFolder?: BrowserObject}>) {
+            const { bucket, file, files, path, parrentFolder } = action.payload;
+            Object.assign(state, { ...state, files, file: { ...initialOpenedFileState, name: file.name, browserObject: file, mimeType: file.metadata.mime || '' }, bucket, path, parrentFolder });
+            SUPPORTED_FILE_TYPES.some(element => {
+                const result = element.mimeTypes.includes(file.metadata.mime || '');
                 if(result) {
-                    state.file.fileType = fileTypes[index];
+                    state.file.fileType = element.type;
+
                     return result;
                 }
             });
-        }
+        },
     },
     extraReducers(builder) {
         builder.addCase(loadFilePreview.pending, (state) => {
@@ -68,8 +68,8 @@ const filePreviewSlice = createSlice({
             state.file.objectUrl = action.payload;
             state.file.isLoading = false;
         });
-    }
+    },
 });
 
-export const { closeFile, openFile  } = filePreviewSlice.actions;
+export const { closeFile, openFile } = filePreviewSlice.actions;
 export default filePreviewSlice.reducer;

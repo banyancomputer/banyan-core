@@ -1,40 +1,27 @@
-import React, { SVGProps } from 'react';
+import React, { useEffect, useState } from 'react';
 
-import { CommonFileIcon, Folder, ImageFileIcon, VideoFileIcon, PdfFileIcon, WordFileIcon, AudioFileIcon } from '@static/images/common';
+import { BrowserObject } from '@app/types/bucket';
+import { SUPPORTED_FILE_TYPES } from '@app/types/filesPreview';
 
-export const FileIcon: React.FC<{ fileName: string; type: string, className?: string; size?: string }> = ({ fileName, className, type, size = '20px' }) => {
-    const fileTypeMapper: Record<string, React.FC<SVGProps<any>>> = {
-        'txt': CommonFileIcon,
-        'pdf': PdfFileIcon,
-        'doc': WordFileIcon,
-        'docx': WordFileIcon,
-        'jpg': ImageFileIcon,
-        'jpeg': ImageFileIcon,
-        'png': ImageFileIcon,
-        'gif': ImageFileIcon,
-        'mp4': VideoFileIcon,
-        'mkv': VideoFileIcon,
-        'webm': VideoFileIcon,
-        'mp3': AudioFileIcon,
-        'wav': AudioFileIcon,
-        'mov': VideoFileIcon,
-        'ogg': VideoFileIcon,
-        'fig': CommonFileIcon,
-    };
+import { CommonFileIcon } from '@static/images/common';
 
-    const Icon = fileTypeMapper[fileName.split('.').pop() || ''];
+export const FileIcon: React.FC<{ browserObject: BrowserObject, className?: string; size?: string }> = ({ browserObject, className, size = '20px' }) => {
+    const [icon, setIcon] = useState(<CommonFileIcon width={size} height={size} />);
+
+    useEffect(() => {
+        SUPPORTED_FILE_TYPES.some(element => {
+            const result = element.mimeTypes.includes(browserObject.metadata.mime || '');
+            if (result) {
+                const Icon = element.icon;
+                setIcon(<Icon width={size} height={size} />);
+                return;
+            }
+        });
+    }, []);
 
     return (
         <div className={className}>
-            {
-                type === 'file' ?
-                    Icon ?
-                        <Icon width={size} height={size} />
-                        :
-                        <CommonFileIcon width={size} height={size} />
-                    :
-                    <Folder width={size} height={size} />
-            }
+            {icon}
         </div>
     );
 };

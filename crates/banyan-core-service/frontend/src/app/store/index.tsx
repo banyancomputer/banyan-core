@@ -21,7 +21,7 @@ export const store = configureStore({
         modals,
         filePreview,
         filesUpload,
-        tomb
+        tomb,
     },
 });
 
