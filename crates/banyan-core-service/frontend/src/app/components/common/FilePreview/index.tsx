@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { unwrapResult } from '@reduxjs/toolkit';
-import mime from 'mime';
 
 import { Loader } from '@components/common/Loader';
 import { SpreadsheetViewer } from '@components/common/FilePreview/SpreadsheetViewer';
@@ -93,7 +92,7 @@ export const FilePreview = () => {
                 return <div className="w-filePreview max-w-filePreview h-full" onClick={event => event.stopPropagation()}>
                     <object
                         data={`${data}#toolbar=0`}
-                        type={`${mime.getType([...file.name.split('.')].pop() || '')}`}
+                        type={file.mimeType}
                         className="w-full h-full rounded-xl"
                     />
                 </div>;

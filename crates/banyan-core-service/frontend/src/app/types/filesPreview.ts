@@ -1,7 +1,9 @@
-export const SUPPORTED_AUDIO_EXTENSIONS = ['mp3', 'ogg', 'wav'];
-export const SUPPORTED_DOCUMENT_EXTENSIONS = ['pdf'];
-export const SUPPORTED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'];
-export const SUPPORTED_SPREADSHEET_EXTENSIONS = ['csv'];
-export const SUPPORTED_VIDEO_EXTENSIONS = ['mp4', 'webm', 'ogg'];
-export const SUPPORTED_EXTENSIONS = [SUPPORTED_AUDIO_EXTENSIONS, SUPPORTED_DOCUMENT_EXTENSIONS, SUPPORTED_IMAGE_EXTENSIONS, SUPPORTED_SPREADSHEET_EXTENSIONS, SUPPORTED_VIDEO_EXTENSIONS];
-export const fileTypes = ['audio', 'document', 'image', 'spreadsheet', 'video'];
+import { AudioFileIcon, CommonFileIcon, ImageFileIcon, PdfFileIcon, VideoFileIcon } from '../static/images/common';
+
+const SUPPORTED_AUDIO = { type: 'audio', mimeTypes: ['audio/mpeg', 'audio/ogg', 'audio/wav'], icon: AudioFileIcon };
+const SUPPORTED_DOCUMENT = { type: 'document', mimeTypes:['application/pdf'], icon: PdfFileIcon };
+const SUPPORTED_IMAGE = { type: 'image', mimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/svg+xml', 'image/webp'], icon: ImageFileIcon };
+const SUPPORTED_SPREADSHEET = { type: 'spreadsheet', mimeTypes:['text/csv'], icon: CommonFileIcon };
+const SUPPORTED_VIDEO = { type: 'video', mimeTypes:['video/mp4', 'video/webm', 'video/ogg'], icon: VideoFileIcon };
+
+export const SUPPORTED_FILE_TYPES = [SUPPORTED_AUDIO, SUPPORTED_DOCUMENT, SUPPORTED_IMAGE, SUPPORTED_SPREADSHEET, SUPPORTED_VIDEO];
