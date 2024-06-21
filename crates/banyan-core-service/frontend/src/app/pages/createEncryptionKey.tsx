@@ -124,7 +124,6 @@ const CreateEncryptionKey = () => {
                 </div>
             </div>
             <PrimaryButton
-                action={confirm}
                 text={messages.continue}
                 disabled={!isDataCorrect}
             />

@@ -101,7 +101,7 @@ const App = () => {
                 dispatch(setError(new BannerError(error.message)));
             };
         })()
-    }, [user.id, keystoreInitialized, escrowedKeyMaterial]);
+    }, [user.id, keystoreInitialized, escrowedKeyMaterial?.apiPublicKeyPem]);
 
     useEffect(() => {
         if (!tomb) return;
