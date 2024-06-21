@@ -13,14 +13,23 @@ pub async fn handler(
 ) -> Result<Response, ReadEscrowedDeviceError> {
     let database = state.database();
     let user_id = session_id.user_id().to_string();
-    let escrowed_device = sqlx::query_as!(
+
+    let maybe_escrowed_device = sqlx::query_as!(
         EscrowedDevice,
         "SELECT * FROM escrowed_devices WHERE user_id = $1;",
         user_id,
     )
-    .fetch_one(&database)
+    .fetch_optional(&database)
     .await
-    .map_err(ReadEscrowedDeviceError::UnableToReadEscrowedDevice)?;
+    .map_err(ReadEscrowedDeviceError::DatabaseFailure)?;
+
+    let escrowed_device = match maybe_escrowed_device {
+        Some(ed) => ed,
+        None => {
+            let err_msg = serde_json::json!({"msg": "user does not have an escrowed key"});
+            return Ok((StatusCode::NOT_FOUND, Json(err_msg)).into_response());
+        }
+    };
 
     let api_escrowed_key_material = ApiEscrowedKeyMaterial::from(escrowed_device);
     Ok((StatusCode::OK, Json(api_escrowed_key_material)).into_response())
@@ -28,8 +37,8 @@ pub async fn handler(
 
 #[derive(Debug, thiserror::Error)]
 pub enum ReadEscrowedDeviceError {
-    #[error("could not read user")]
-    UnableToReadEscrowedDevice(sqlx::Error),
+    #[error("database failure occurred looking up user's escrowed key: {0}")]
+    DatabaseFailure(sqlx::Error),
 }
 
 impl IntoResponse for ReadEscrowedDeviceError {
