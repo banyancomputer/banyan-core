@@ -39,6 +39,7 @@ const CreateEncryptionKey = () => {
 
 
     const confirm = async () => {
+
         const accepted_tos_at = Math.trunc(Date.now() / 1000);
         const userData = await userClient.getCurrentUser();
         try {
@@ -124,6 +125,8 @@ const CreateEncryptionKey = () => {
                 </div>
             </div>
             <PrimaryButton
+                type='button'
+                action={confirm}
                 text={messages.continue}
                 disabled={!isDataCorrect}
             />
