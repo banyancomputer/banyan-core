@@ -6,7 +6,7 @@ import { createBucketAndMount, getSelectedBucketSnapshots, deleteFile, getBucket
 import { UploadWorker } from "@/workers/upload.worker";
 import { Remote } from "comlink";
 
-interface TombState {
+export interface TombState {
     tomb: TombWasm | null;
     buckets: Bucket[];
     trash: Bucket | null;
@@ -18,7 +18,7 @@ interface TombState {
     worker: Remote<UploadWorker> | null;
 };
 
-const initialState: TombState = {
+export const initialState: TombState = {
     tomb: null,
     buckets: [],
     trash: null,
@@ -54,6 +54,9 @@ const tombSlice = createSlice({
         },
         setWorker(state, action: PayloadAction<Remote<UploadWorker>>) {
             state.worker = action.payload;
+        },
+        setBuckets(state, action: PayloadAction<Bucket[]>) {
+            state.buckets = action.payload;
         }
     },
     extraReducers(builder) {
@@ -136,5 +139,5 @@ const tombSlice = createSlice({
     }
 });
 
-export const { selectBucket, setTomb, setWorker, setBucketFiles, setIsLoading, setEncryptionKey, updateBucketsState } = tombSlice.actions;
+export const { selectBucket, setBuckets, setTomb, setWorker, setBucketFiles, setIsLoading, setEncryptionKey, updateBucketsState } = tombSlice.actions;
 export default tombSlice.reducer;

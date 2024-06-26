@@ -47,6 +47,11 @@ export default ({ mode }) => {
 			outDir: path.resolve(__dirname, "../dist/"),
 			cssCodeSplit: true,
 		},
+		test: {
+			environment: 'jsdom',
+			globals: true,
+			setupFiles: 'src/setupTests.js',
+		},
 		worker: {
 			plugins: [topLevelAwait(), wasm(), comlink()],
 			rollupOptions: {

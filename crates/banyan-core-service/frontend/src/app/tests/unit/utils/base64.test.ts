@@ -1,6 +1,7 @@
 import { TextEncoder, TextDecoder } from 'util';
 Object.assign(global, { TextDecoder, TextEncoder });
 import { base64ToString, stringToBase64 } from '@utils/base64';
+import { describe, expect, test } from 'vitest';
 
 const decodedValue = 'test string';
 /** Converted through https://www.base64encode.org */

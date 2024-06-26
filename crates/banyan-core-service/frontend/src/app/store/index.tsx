@@ -33,5 +33,8 @@ export type AppDispatch = typeof store.dispatch;
 /** Hook dispatch for redux toolkit */
 export const useAppDispatch = () => useDispatch<AppDispatch>();
 
+/** Ready for use dispatch function, allows to avoid useDispatch call in eery function. */
+export const dispatch = store.dispatch;
+
 /** Hook useSelector hook for redux toolkit */
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;

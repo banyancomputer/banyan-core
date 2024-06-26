@@ -26,9 +26,14 @@
     "build": "vite build --mode production",
     "start": "vite",
     "lint": "eslint --fix --ext .js,.ts,.tsx .",
-    "test": "jest --config=jest.config.js"
+    "test": "vitest"
   },
   "devDependencies": {
+    "@babel/core": "^7.24.7",
+    "@babel/plugin-transform-runtime": "^7.24.7",
+    "@babel/preset-env": "^7.24.7",
+    "@babel/preset-react": "^7.24.7",
+    "@babel/preset-typescript": "^7.24.7",
     "@testing-library/jest-dom": "5.16.5",
     "@testing-library/react": "13.3.0",
     "@testing-library/user-event": "13.5.0",
@@ -42,6 +47,7 @@
     "@typescript-eslint/parser": "7.6.0",
     "@vitejs/plugin-react": "4.2.1",
     "autoprefixer": "10.4.19",
+    "babel-jest": "^29.7.0",
     "eslint": "8.56.0",
     "eslint-plugin-import": "2.29.1",
     "eslint-plugin-unicorn": "52.0.0",
@@ -52,10 +58,11 @@
     "ts-jest": "29.1.2",
     "typescript": "5.4.5",
     "vite": "5.2.11",
-    "vite-plugin-compression2": "1.1.1",
     "vite-plugin-comlink": "5.0.1",
+    "vite-plugin-compression2": "1.1.1",
     "vite-plugin-top-level-await": "1.4.1",
-    "vite-plugin-wasm": "3.3.0"
+    "vite-plugin-wasm": "3.3.0",
+    "vitest": "^1.6.0"
   },
   "browserslist": {
     "production": [

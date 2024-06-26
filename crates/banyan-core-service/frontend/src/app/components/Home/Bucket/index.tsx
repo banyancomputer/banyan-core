@@ -96,6 +96,7 @@ export const Bucket: React.FC<{ bucket: IBucket }> = ({ bucket }) => {
         <div
             className={`rounded-xl transition-all border-1 border-border-regular ${bucket.locked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             ref={bucketRef}
+            id="bucket"
             onContextMenu={onContextMenu}
             onClick={openBucket}
             onDrop={handleDrop}
